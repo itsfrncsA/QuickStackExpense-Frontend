@@ -30,7 +30,7 @@ const Home = () => {
     date: new Date().toISOString().split('T')[0],
     description: '',
   });
-  const [incomeAmount, setIncomeAmount] = useState(income);
+  const [incomeAmount, setIncomeAmount] = useState('');
   const [goalForm, setGoalForm] = useState({
     name: '',
     targetAmount: '',
@@ -114,14 +114,16 @@ const Home = () => {
   };
 
   const handleSetIncome = () => {
-    if (incomeAmount <= 0) {
+    const incomeValue = parseFloat(incomeAmount);
+    if (isNaN(incomeValue) || incomeValue <= 0) {
       alert('Please enter a valid income amount');
       return;
     }
-    setIncome(incomeAmount);
-    localStorage.setItem('monthlyIncome', incomeAmount);
+    setIncome(incomeValue);
+    localStorage.setItem('monthlyIncome', incomeValue);
     setShowIncomeForm(false);
-    alert('Monthly income set to ' + formatAmount(incomeAmount));
+    setIncomeAmount('');
+    alert('Monthly income set to ' + formatAmount(incomeValue));
   };
 
   const handleAddExpense = async (e) => {
@@ -274,6 +276,9 @@ const Home = () => {
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
             <div style={{ fontSize: '0.85rem', color: '#666' }}>Monthly Income</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
+            {income === 0 && (
+              <button onClick={() => setShowIncomeForm(true)} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem', backgroundColor: '#4CAF50', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>Set Income</button>
+            )}
           </div>
           
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
@@ -294,15 +299,22 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Set Income Form */}
+        {/* Set Income Form - FIXED: Input can be empty */}
         {showIncomeForm && (
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Set Monthly Income</h3>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '1.5rem' }}>PHP</span>
-              <input type="number" step="0.01" placeholder="Enter your monthly income" value={incomeAmount} onChange={(e) => setIncomeAmount(parseFloat(e.target.value) || 0)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} />
+              <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>PHP</span>
+              <input 
+                type="number" 
+                step="0.01" 
+                placeholder="Enter your monthly income" 
+                value={incomeAmount} 
+                onChange={(e) => setIncomeAmount(e.target.value)} 
+                style={{ flex: 1, padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} 
+              />
               <button onClick={handleSetIncome} style={{ padding: '0.75rem 1.5rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Save</button>
-              <button onClick={() => setShowIncomeForm(false)} style={{ padding: '0.75rem 1.5rem', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => { setShowIncomeForm(false); setIncomeAmount(''); }} style={{ padding: '0.75rem 1.5rem', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         )}
