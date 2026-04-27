@@ -226,36 +226,13 @@ const Home = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
-      {/* Toggle Button - Fixed: No question marks */}
-      <button 
-        onClick={toggleSidebar}
-        style={{
-          position: 'fixed',
-          top: '15px',
-          left: sidebarOpen ? '235px' : '15px',
-          zIndex: 1001,
-          backgroundColor: '#1a1a2e',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '8px 12px',
-          cursor: 'pointer',
-          fontSize: '13px',
-          fontWeight: 'bold',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-          transition: 'left 0.3s ease'
-        }}
-      >
-        {sidebarOpen ? 'Hide Menu' : 'Show Menu'}
-      </button>
-
       {/* Sidebar */}
       <div style={{
-        width: sidebarOpen ? '250px' : '0',
-        minWidth: sidebarOpen ? '250px' : '0',
+        width: sidebarOpen ? '250px' : '60px',
+        minWidth: sidebarOpen ? '250px' : '60px',
         backgroundColor: '#1a1a2e',
         color: 'white',
-        padding: sidebarOpen ? '1.5rem' : '0',
+        padding: sidebarOpen ? '1.5rem' : '0.75rem',
         overflowY: 'auto',
         transition: 'all 0.3s ease',
         height: '100vh',
@@ -263,41 +240,36 @@ const Home = () => {
         top: 0,
         zIndex: 1000
       }}>
+        {/* Clickable Logo - Toggles Sidebar */}
+        <div 
+          onClick={toggleSidebar}
+          style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            marginBottom: sidebarOpen ? '2rem' : '1rem',
+            marginTop: sidebarOpen ? '1rem' : '0.5rem',
+            cursor: 'pointer'
+          }}
+        >
+          <img 
+            src="/layout.png" 
+            alt="Menu" 
+            style={{ 
+              width: sidebarOpen ? '80px' : '40px',
+              height: 'auto',
+              objectFit: 'contain',
+              transition: 'all 0.3s ease'
+            }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
+          />
+          <div style={{ display: 'none', fontSize: '0.8rem', color: 'white' }}>Menu</div>
+        </div>
+        
         {sidebarOpen && (
           <>
-            {/* Logo with layout.png */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              marginBottom: '2rem',
-              marginTop: '1rem'
-            }}>
-              <img 
-                src="/layout.png" 
-                alt="QuickStack Logo" 
-                style={{ 
-                  maxWidth: '100%', 
-                  height: 'auto',
-                  maxHeight: '60px',
-                  objectFit: 'contain'
-                }}
-                onError={(e) => {
-                  // If image fails to load, show text fallback
-                  e.target.style.display = 'none';
-                  const parent = e.target.parentElement;
-                  if (parent && !parent.querySelector('.logo-fallback')) {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'logo-fallback';
-                    fallback.style.fontSize = '1.2rem';
-                    fallback.style.fontWeight = 'bold';
-                    fallback.style.color = 'white';
-                    fallback.innerText = 'QuickStack';
-                    parent.appendChild(fallback);
-                  }
-                }}
-              />
-            </div>
-            
             {/* Budget Overview */}
             <div>
               <h3 style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '0.75rem', letterSpacing: '1px' }}>BUDGET OVERVIEW</h3>
@@ -344,10 +316,8 @@ const Home = () => {
       <div style={{ 
         flex: 1, 
         padding: '1.5rem',
-        paddingLeft: sidebarOpen ? '1.5rem' : '1rem',
-        transition: 'padding 0.3s ease',
         overflowY: 'auto',
-        marginTop: '20px'
+        marginLeft: sidebarOpen ? '0' : '0'
       }}>
         <h1 style={{ fontSize: '1.5rem', color: '#1a1a2e', marginBottom: '1rem' }}>Dashboard</h1>
         
