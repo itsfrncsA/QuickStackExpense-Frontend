@@ -10,7 +10,7 @@ A full-stack expense tracking application built with the **MERN Stack**.
 
 **Francis Louis M. Arillo**
 - GitHub: [itsfrncsA](https://github.com/itsfrncsA)
-- LinkedIn: [francis arillo](https://linkedin.com/in/francis-arillo)
+- LinkedIn: [francis arillo](https://www.linkedin.com/in/francis-arillo-7671311b4/)
 
 ## ✨ Features
 
