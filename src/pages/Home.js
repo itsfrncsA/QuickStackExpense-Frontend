@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config';
 
 const Home = () => {
   const [expenses, setExpenses] = useState([]);
@@ -23,19 +24,16 @@ const Home = () => {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
 
-  // Fetch expenses and summary
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Fetch expenses
-      const expensesRes = await axios.get('http://localhost:5000/api/expenses', {
+      const expensesRes = await axios.get(${API_URL}/api/expenses, {
         headers: { 'x-auth-token': token }
       });
       setExpenses(expensesRes.data);
       
-      // Fetch summary
-      const summaryRes = await axios.get('http://localhost:5000/api/expenses/summary', {
+      const summaryRes = await axios.get(${API_URL}/api/expenses/summary, {
         headers: { 'x-auth-token': token }
       });
       setSummary(summaryRes.data);
@@ -51,12 +49,11 @@ const Home = () => {
     fetchData();
   }, []);
 
-  // Add expense
   const handleAddExpense = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/expenses', formData, {
+      await axios.post(${API_URL}/api/expenses, formData, {
         headers: { 'x-auth-token': token }
       });
       setFormData({
@@ -73,12 +70,11 @@ const Home = () => {
     }
   };
 
-  // Delete expense
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete('http://localhost:5000/api/expenses/' + id, {
+        await axios.delete(${API_URL}/api/expenses/ + id, {
           headers: { 'x-auth-token': token }
         });
         fetchData();
@@ -89,7 +85,6 @@ const Home = () => {
     }
   };
 
-  // Start editing
   const handleEdit = (expense) => {
     setEditingId(expense._id);
     setEditData({
@@ -101,11 +96,10 @@ const Home = () => {
     });
   };
 
-  // Save edit
   const handleUpdate = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put('http://localhost:5000/api/expenses/' + id, editData, {
+      await axios.put(${API_URL}/api/expenses/ + id, editData, {
         headers: { 'x-auth-token': token }
       });
       setEditingId(null);
@@ -142,10 +136,9 @@ const Home = () => {
 
   return (
     <div style={styles.container}>
-      <h1>💰 QuickStack Expense Tracker</h1>
-      <p style={styles.subtitle}>Track your expenses in Philippine Peso (₱)</p>
+      <h1>?? QuickStack Expense Tracker</h1>
+      <p style={styles.subtitle}>Track your expenses in Philippine Peso (?)</p>
       
-      {/* Summary Cards */}
       <div style={styles.summaryContainer}>
         <div style={styles.summaryCard}>
           <h3>Total Expenses</h3>
@@ -165,64 +158,21 @@ const Home = () => {
         </div>
       </div>
       
-      {/* Add Expense Form */}
       <div style={styles.formContainer}>
         <h3>Add New Expense</h3>
         <form onSubmit={handleAddExpense} style={styles.form}>
-          <input
-            type="text"
-            name="title"
-            placeholder="Title"
-            value={formData.title}
-            onChange={(e) => setFormData({...formData, title: e.target.value})}
-            required
-            style={styles.input}
-          />
-          <input
-            type="number"
-            name="amount"
-            step="0.01"
-            placeholder="Amount (₱)"
-            value={formData.amount}
-            onChange={(e) => setFormData({...formData, amount: e.target.value})}
-            required
-            style={styles.input}
-          />
-          <select
-            name="category"
-            value={formData.category}
-            onChange={(e) => setFormData({...formData, category: e.target.value})}
-            style={styles.input}
-          >
-            <option>Food</option>
-            <option>Transport</option>
-            <option>Shopping</option>
-            <option>Entertainment</option>
-            <option>Bills</option>
-            <option>Healthcare</option>
-            <option>Education</option>
-            <option>Other</option>
+          <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required style={styles.input} />
+          <input type="number" step="0.01" placeholder="Amount (?)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} required style={styles.input} />
+          <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} style={styles.input}>
+            <option>Food</option><option>Transport</option><option>Shopping</option>
+            <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
+            <option>Education</option><option>Other</option>
           </select>
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={(e) => setFormData({...formData, date: e.target.value})}
-            style={styles.input}
-          />
-          <input
-            type="text"
-            name="description"
-            placeholder="Description (optional)"
-            value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
-            style={styles.input}
-          />
+          <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={styles.input} />
           <button type="submit" style={styles.addButton}>Add Expense</button>
         </form>
       </div>
       
-      {/* Expenses List */}
       <div style={styles.listContainer}>
         <h3>Your Expenses</h3>
         {expenses.length === 0 ? (
@@ -230,14 +180,7 @@ const Home = () => {
         ) : (
           <table style={styles.table}>
             <thead>
-              <tr>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Category</th>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>Title</th><th>Amount</th><th>Category</th><th>Date</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {expenses.map(expense => (
@@ -246,19 +189,13 @@ const Home = () => {
                     <>
                       <td><input value={editData.title} onChange={(e) => setEditData({...editData, title: e.target.value})} style={styles.editInput} /></td>
                       <td><input type="number" value={editData.amount} onChange={(e) => setEditData({...editData, amount: e.target.value})} style={styles.editInput} /></td>
-                      <td>
-                        <select value={editData.category} onChange={(e) => setEditData({...editData, category: e.target.value})} style={styles.editInput}>
-                          <option>Food</option><option>Transport</option><option>Shopping</option>
-                          <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
-                          <option>Education</option><option>Other</option>
-                        </select>
-                      </td>
+                      <td><select value={editData.category} onChange={(e) => setEditData({...editData, category: e.target.value})} style={styles.editInput}>
+                        <option>Food</option><option>Transport</option><option>Shopping</option>
+                        <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
+                        <option>Education</option><option>Other</option>
+                      </select></td>
                       <td><input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={styles.editInput} /></td>
-                      <td><input value={editData.description || ''} onChange={(e) => setEditData({...editData, description: e.target.value})} style={styles.editInput} /></td>
-                      <td>
-                        <button onClick={() => handleUpdate(expense._id)} style={styles.saveBtn}>Save</button>
-                        <button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button>
-                      </td>
+                      <td><button onClick={() => handleUpdate(expense._id)} style={styles.saveBtn}>Save</button><button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button></td>
                     </>
                   ) : (
                     <>
@@ -266,11 +203,7 @@ const Home = () => {
                       <td style={styles.amountCell}>{formatAmount(expense.amount)}</td>
                       <td><span style={{...styles.category, backgroundColor: getCategoryColor(expense.category)}}>{expense.category}</span></td>
                       <td>{new Date(expense.date).toLocaleDateString()}</td>
-                      <td>{expense.description || '-'}</td>
-                      <td>
-                        <button onClick={() => handleEdit(expense)} style={styles.editBtn}>Edit</button>
-                        <button onClick={() => handleDelete(expense._id)} style={styles.deleteBtn}>Delete</button>
-                      </td>
+                      <td><button onClick={() => handleEdit(expense)} style={styles.editBtn}>Edit</button><button onClick={() => handleDelete(expense._id)} style={styles.deleteBtn}>Delete</button></td>
                     </>
                   )}
                 </tr>
