@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       try {
-        const res = await axios.get(${API_URL}/api/auth/me);
+        const res = await axios.get(`${API_URL}/api/auth/me`);
         setUser(res.data);
       } catch (err) {
         console.error('Load user error:', err);
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const res = await axios.post(${API_URL}/api/auth/register, { name, email, password });
+      const res = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
       
       localStorage.setItem('token', res.data.token);
       setToken(res.data.token);
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post(${API_URL}/api/auth/login, { email, password });
+      const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       
       localStorage.setItem('token', res.data.token);
       setToken(res.data.token);
