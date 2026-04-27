@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-import API_URL from '../config';
+
+// Directly use the Render backend URL
+const API_URL = 'https://quickstackexpense.onrender.com';
 
 const AuthContext = createContext();
 
@@ -48,6 +50,7 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
       return { success: true };
     } catch (err) {
+      console.error('Register error:', err);
       return { success: false, error: err.response?.data?.message || 'Registration failed' };
     }
   };
@@ -62,6 +65,7 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
       return { success: true };
     } catch (err) {
+      console.error('Login error:', err);
       return { success: false, error: err.response?.data?.message || 'Login failed' };
     }
   };
