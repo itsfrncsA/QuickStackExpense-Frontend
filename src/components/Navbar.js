@@ -15,6 +15,14 @@ const Navbar = () => {
     <nav style={styles.nav}>
       <div style={styles.container}>
         <Link to="/" style={styles.logo}>
+          <img 
+            src="/quicksatcklogo.png" 
+            alt="QuickStack" 
+            style={styles.logoImage}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
           <span style={styles.logoText}>QuickStack</span>
         </Link>
         <div style={styles.tagline}>
@@ -55,9 +63,14 @@ const styles = {
     gap: '10px',
     textDecoration: 'none',
   },
+  logoImage: {
+    height: '40px',
+    width: 'auto',
+    objectFit: 'contain',
+  },
   logoText: {
     color: 'white',
-    fontSize: '1.5rem',
+    fontSize: '1.3rem',
     fontWeight: 'bold',
   },
   tagline: {
