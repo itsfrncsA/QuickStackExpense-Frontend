@@ -28,12 +28,12 @@ const Home = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const expensesRes = await axios.get(${API_URL}/api/expenses, {
+      const expensesRes = await axios.get(API_URL + '/api/expenses', {
         headers: { 'x-auth-token': token }
       });
       setExpenses(expensesRes.data);
       
-      const summaryRes = await axios.get(${API_URL}/api/expenses/summary, {
+      const summaryRes = await axios.get(API_URL + '/api/expenses/summary', {
         headers: { 'x-auth-token': token }
       });
       setSummary(summaryRes.data);
@@ -53,7 +53,7 @@ const Home = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(${API_URL}/api/expenses, formData, {
+      await axios.post(API_URL + '/api/expenses', formData, {
         headers: { 'x-auth-token': token }
       });
       setFormData({
@@ -74,7 +74,7 @@ const Home = () => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(${API_URL}/api/expenses/ + id, {
+        await axios.delete(API_URL + '/api/expenses/' + id, {
           headers: { 'x-auth-token': token }
         });
         fetchData();
@@ -99,7 +99,7 @@ const Home = () => {
   const handleUpdate = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(${API_URL}/api/expenses/ + id, editData, {
+      await axios.put(API_URL + '/api/expenses/' + id, editData, {
         headers: { 'x-auth-token': token }
       });
       setEditingId(null);
@@ -190,16 +190,18 @@ const Home = () => {
                     <>
                       <td><input value={editData.title} onChange={(e) => setEditData({...editData, title: e.target.value})} style={styles.editInput} /></td>
                       <td><input type="number" value={editData.amount} onChange={(e) => setEditData({...editData, amount: e.target.value})} style={styles.editInput} /></td>
-                      <td><select value={editData.category} onChange={(e) => setEditData({...editData, category: e.target.value})} style={styles.editInput}>
-                        <option>Food</option><option>Transport</option><option>Shopping</option>
-                        <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
-                        <option>Education</option><option>Other</option>
-                      </select></td>
-                      <td><input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={styles.editInput} /><table>
+                      <td>
+                        <select value={editData.category} onChange={(e) => setEditData({...editData, category: e.target.value})} style={styles.editInput}>
+                          <option>Food</option><option>Transport</option><option>Shopping</option>
+                          <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
+                          <option>Education</option><option>Other</option>
+                        </select>
+                       </td>
+                      <td><input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={styles.editInput} /></td>
                       <td>
                         <button onClick={() => handleUpdate(expense._id)} style={styles.saveBtn}>Save</button>
                         <button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button>
-                      </td>
+                       </td>
                     </>
                   ) : (
                     <>
@@ -210,10 +212,10 @@ const Home = () => {
                       <td>
                         <button onClick={() => handleEdit(expense)} style={styles.editBtn}>Edit</button>
                         <button onClick={() => handleDelete(expense._id)} style={styles.deleteBtn}>Delete</button>
-                      </td>
+                       </td>
                     </>
                   )}
-                </tr>
+                </td>
               ))}
             </tbody>
           </table>
