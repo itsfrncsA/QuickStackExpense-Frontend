@@ -8,6 +8,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({ total: 0, recentTotal: 0, count: 0, byCategory: {} });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -74,6 +76,31 @@ const Home = () => {
     }
   };
 
+  const handleEdit = (expense) => {
+    setEditingId(expense._id);
+    setEditData({
+      title: expense.title,
+      amount: expense.amount,
+      category: expense.category,
+      date: expense.date?.split('T')[0] || new Date().toISOString().split('T')[0],
+      description: expense.description || ''
+    });
+  };
+
+  const handleUpdate = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(API_URL + '/api/expenses/' + id, editData, {
+        headers: { 'x-auth-token': token }
+      });
+      setEditingId(null);
+      fetchData();
+      alert('Expense updated successfully!');
+    } catch (err) {
+      alert('Error updating expense: ' + err.message);
+    }
+  };
+
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -81,18 +108,9 @@ const Home = () => {
     }).format(amount || 0);
   };
 
-  const getCategoryIcon = (cat) => {
-    const icons = {
-      Food: '??',
-      Transport: '??',
-      Shopping: '???',
-      Entertainment: '??',
-      Bills: '??',
-      Healthcare: '??',
-      Education: '??',
-      Other: '??'
-    };
-    return icons[cat] || '??';
+  // No emojis - just text
+  const getCategoryLabel = (cat) => {
+    return cat;
   };
 
   const categories = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Healthcare', 'Education', 'Other'];
@@ -106,14 +124,12 @@ const Home = () => {
       {/* Sidebar */}
       <div style={{ width: '280px', backgroundColor: '#1a1a2e', color: 'white', padding: '2rem 1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 'bold' }}>
-          <span>??</span>
           <span>QuickStack</span>
         </div>
         
         <div style={{ marginTop: 'auto' }}>
           <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>Wallet</h3>
           <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '2rem' }}>??</span>
             <div>
               <div style={{ fontSize: '0.85rem', color: '#aaa' }}>Cash Wallet</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4CAF50' }}>{formatAmount(summary.total)}</div>
@@ -126,35 +142,23 @@ const Home = () => {
       <div style={{ flex: 1, padding: '2rem' }}>
         <h1 style={{ fontSize: '2rem', color: '#1a1a2e', marginBottom: '2rem' }}>Dashboard</h1>
         
-        {/* Stats Cards */}
+        {/* Stats Cards - No emojis */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.5rem' }}></span>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Balance</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
-            </div>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Balance</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
           </div>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.5rem' }}></span>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Expenses</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
-            </div>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Expenses</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
           </div>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.5rem' }}>??</span>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: '#666' }}>Last 30 Days</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.recentTotal)}</div>
-            </div>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.85rem', color: '#666' }}>Last 30 Days</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.recentTotal)}</div>
           </div>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.5rem' }}>??</span>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: '#666' }}>Transactions</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{summary.count}</div>
-            </div>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
+            <div style={{ fontSize: '0.85rem', color: '#666' }}>Transactions</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{summary.count}</div>
           </div>
         </div>
 
@@ -193,7 +197,7 @@ const Home = () => {
                 style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }}
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat}>{getCategoryIcon(cat)} {cat}</option>
+                  <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
                 ))}
               </select>
               <input 
@@ -222,7 +226,6 @@ const Home = () => {
           <h3 style={{ marginBottom: '1rem' }}>Recent Transactions</h3>
           {expenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>??</div>
               <p>No transactions yet</p>
               <p style={{ fontSize: '0.85rem' }}>Click "Add New Transaction" to get started</p>
             </div>
@@ -230,16 +233,57 @@ const Home = () => {
             <div>
               {expenses.slice(0, 10).map(expense => (
                 <div key={expense._id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', borderBottom: '1px solid #eee' }}>
-                  <span style={{ fontSize: '2rem' }}>{getCategoryIcon(expense.category)}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '500' }}>{expense.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(expense.date).toLocaleDateString()}</div>
-                    {expense.description && <div style={{ fontSize: '0.75rem', color: '#aaa' }}>{expense.description}</div>}
+                    {editingId === expense._id ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <input 
+                          value={editData.title} 
+                          onChange={(e) => setEditData({...editData, title: e.target.value})} 
+                          style={{ padding: '0.25rem', border: '1px solid #ddd', borderRadius: '4px', width: '120px' }} 
+                          placeholder="Title"
+                        />
+                        <input 
+                          type="number" 
+                          value={editData.amount} 
+                          onChange={(e) => setEditData({...editData, amount: e.target.value})} 
+                          style={{ padding: '0.25rem', border: '1px solid #ddd', borderRadius: '4px', width: '100px' }} 
+                          placeholder="Amount"
+                        />
+                        <select 
+                          value={editData.category} 
+                          onChange={(e) => setEditData({...editData, category: e.target.value})} 
+                          style={{ padding: '0.25rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        >
+                          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                        <input 
+                          type="date" 
+                          value={editData.date} 
+                          onChange={(e) => setEditData({...editData, date: e.target.value})} 
+                          style={{ padding: '0.25rem', border: '1px solid #ddd', borderRadius: '4px' }} 
+                        />
+                        <button onClick={() => handleUpdate(expense._id)} style={{ background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', padding: '0.25rem 0.5rem', cursor: 'pointer' }}>Save</button>
+                        <button onClick={() => setEditingId(null)} style={{ background: '#999', color: 'white', border: 'none', borderRadius: '4px', padding: '0.25rem 0.5rem', cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontWeight: '500' }}>{expense.title}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(expense.date).toLocaleDateString()}</div>
+                        {expense.description && <div style={{ fontSize: '0.75rem', color: '#aaa' }}>{expense.description}</div>}
+                      </>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ color: '#f44336', fontWeight: '600' }}>-{formatAmount(expense.amount)}</span>
-                    <button onClick={() => handleDelete(expense._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>???</button>
-                  </div>
+                  {editingId !== expense._id && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ color: '#f44336', fontWeight: '600' }}>-{formatAmount(expense.amount)}</span>
+                      <button onClick={() => handleEdit(expense)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <img src="/edit.png" alt="Edit" style={{ width: '20px', height: '20px' }} />
+                      </button>
+                      <button onClick={() => handleDelete(expense._id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <img src="/delete.png" alt="Delete" style={{ width: '20px', height: '20px' }} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
