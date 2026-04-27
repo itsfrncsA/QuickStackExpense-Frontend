@@ -226,7 +226,7 @@ const Home = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
-      {/* Toggle Button - No emojis, no question marks */}
+      {/* Toggle Button - Fixed: No question marks */}
       <button 
         onClick={toggleSidebar}
         style={{
@@ -246,7 +246,7 @@ const Home = () => {
           transition: 'left 0.3s ease'
         }}
       >
-        {sidebarOpen ? '? Hide Menu' : '? Show Menu'}
+        {sidebarOpen ? 'Hide Menu' : 'Show Menu'}
       </button>
 
       {/* Sidebar */}
@@ -265,27 +265,37 @@ const Home = () => {
       }}>
         {sidebarOpen && (
           <>
-            {/* Logo - text only, no image to avoid issues */}
+            {/* Logo with layout.png */}
             <div style={{ 
-              textAlign: 'center',
+              display: 'flex', 
+              justifyContent: 'center', 
               marginBottom: '2rem',
               marginTop: '1rem'
             }}>
-              <div style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: 'bold',
-                color: 'white',
-                letterSpacing: '1px'
-              }}>
-                QuickStack
-              </div>
-              <div style={{ 
-                fontSize: '0.65rem', 
-                color: '#aaa',
-                marginTop: '0.25rem'
-              }}>
-                Expense Tracker
-              </div>
+              <img 
+                src="/layout.png" 
+                alt="QuickStack Logo" 
+                style={{ 
+                  maxWidth: '100%', 
+                  height: 'auto',
+                  maxHeight: '60px',
+                  objectFit: 'contain'
+                }}
+                onError={(e) => {
+                  // If image fails to load, show text fallback
+                  e.target.style.display = 'none';
+                  const parent = e.target.parentElement;
+                  if (parent && !parent.querySelector('.logo-fallback')) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'logo-fallback';
+                    fallback.style.fontSize = '1.2rem';
+                    fallback.style.fontWeight = 'bold';
+                    fallback.style.color = 'white';
+                    fallback.innerText = 'QuickStack';
+                    parent.appendChild(fallback);
+                  }
+                }}
+              />
             </div>
             
             {/* Budget Overview */}
