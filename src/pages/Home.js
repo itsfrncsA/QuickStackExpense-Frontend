@@ -272,8 +272,28 @@ const Home = () => {
       }}>
         {sidebarOpen && (
           <>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
-              QuickStack
+            {/* Logo with layout.png */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              marginBottom: '2rem',
+              padding: '0.5rem'
+            }}>
+              <img 
+                src="/layout.png" 
+                alt="QuickStack Logo" 
+                style={{ 
+                  maxWidth: '100%', 
+                  height: 'auto',
+                  maxHeight: '80px',
+                  objectFit: 'contain'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div style={{ display: 'none', fontSize: '1.2rem', fontWeight: 'bold' }}>QuickStack</div>
             </div>
             
             {/* Budget Overview */}
