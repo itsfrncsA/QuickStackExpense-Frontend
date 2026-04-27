@@ -82,7 +82,16 @@ const Home = () => {
   };
 
   const getCategoryIcon = (cat) => {
-    const icons = { Food: '??', Transport: '??', Shopping: '???', Entertainment: '??', Bills: '??', Healthcare: '??', Education: '??', Other: '??' };
+    const icons = {
+      Food: '??',
+      Transport: '??',
+      Shopping: '???',
+      Entertainment: '??',
+      Bills: '??',
+      Healthcare: '??',
+      Education: '??',
+      Other: '??'
+    };
     return icons[cat] || '??';
   };
 
@@ -102,7 +111,7 @@ const Home = () => {
         </div>
         
         <div style={{ marginTop: 'auto' }}>
-          <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>Wallets</h3>
+          <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>Wallet</h3>
           <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '2rem' }}>??</span>
             <div>
@@ -151,20 +160,55 @@ const Home = () => {
 
         {/* Add Expense Button */}
         {!showAddForm ? (
-          <button onClick={() => setShowAddForm(true)} style={{ width: '100%', padding: '1rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', marginBottom: '2rem' }}>
+          <button 
+            onClick={() => setShowAddForm(true)} 
+            style={{ width: '100%', padding: '1rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', marginBottom: '2rem' }}
+          >
             + Add New Transaction
           </button>
         ) : (
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>New Transaction</h3>
             <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} />
-              <input type="number" step="0.01" placeholder="Amount (?)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} required style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} />
-              <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }}>
-                {categories.map(cat => <option key={cat} value={cat}>{getCategoryIcon(cat)} {cat}</option>)}
+              <input 
+                type="text" 
+                placeholder="Title" 
+                value={formData.title} 
+                onChange={(e) => setFormData({...formData, title: e.target.value})} 
+                required 
+                style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} 
+              />
+              <input 
+                type="number" 
+                step="0.01" 
+                placeholder="Amount (?)" 
+                value={formData.amount} 
+                onChange={(e) => setFormData({...formData, amount: e.target.value})} 
+                required 
+                style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} 
+              />
+              <select 
+                value={formData.category} 
+                onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }}
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{getCategoryIcon(cat)} {cat}</option>
+                ))}
               </select>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} />
-              <input type="text" placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} />
+              <input 
+                type="date" 
+                value={formData.date} 
+                onChange={(e) => setFormData({...formData, date: e.target.value})} 
+                style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} 
+              />
+              <input 
+                type="text" 
+                placeholder="Description" 
+                value={formData.description} 
+                onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} 
+              />
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <button type="submit" style={{ flex: 1, padding: '0.75rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Save</button>
                 <button type="button" onClick={() => setShowAddForm(false)} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
@@ -175,25 +219,26 @@ const Home = () => {
 
         {/* Transactions List */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
-          <h3>Recent Transactions</h3>
+          <h3 style={{ marginBottom: '1rem' }}>Recent Transactions</h3>
           {expenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>??</div>
               <p>No transactions yet</p>
+              <p style={{ fontSize: '0.85rem' }}>Click "Add New Transaction" to get started</p>
             </div>
           ) : (
             <div>
-              {expenses.slice(0, 10).map(exp => (
-                <div key={exp._id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', borderBottom: '1px solid #eee' }}>
-                  <span style={{ fontSize: '2rem' }}>{getCategoryIcon(exp.category)}</span>
+              {expenses.slice(0, 10).map(expense => (
+                <div key={expense._id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', borderBottom: '1px solid #eee' }}>
+                  <span style={{ fontSize: '2rem' }}>{getCategoryIcon(expense.category)}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '500' }}>{exp.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(exp.date).toLocaleDateString()}</div>
-                    {exp.description && <div style={{ fontSize: '0.75rem', color: '#aaa' }}>{exp.description}</div>}
+                    <div style={{ fontWeight: '500' }}>{expense.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(expense.date).toLocaleDateString()}</div>
+                    {expense.description && <div style={{ fontSize: '0.75rem', color: '#aaa' }}>{expense.description}</div>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ color: '#f44336', fontWeight: '600' }}>-{formatAmount(exp.amount)}</span>
-                    <button onClick={() => handleDelete(exp._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>???</button>
+                    <span style={{ color: '#f44336', fontWeight: '600' }}>-{formatAmount(expense.amount)}</span>
+                    <button onClick={() => handleDelete(expense._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>???</button>
                   </div>
                 </div>
               ))}
