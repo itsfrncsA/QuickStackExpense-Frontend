@@ -25,12 +25,14 @@ const LoadingScreen = () => (
       animation: 'spin 1s linear infinite'
     }}></div>
     <p style={{ color: '#7f8c8d', fontSize: '16px' }}>Loading your dashboard...</p>
-    <style>{\
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    <style>
+      {
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
       }
-    \}</style>
+    </style>
   </div>
 );
 
