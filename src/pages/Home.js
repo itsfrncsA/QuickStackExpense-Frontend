@@ -6,6 +6,7 @@ const API_URL = 'https://quickstackexpense.onrender.com';
 const Home = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -37,6 +38,21 @@ const Home = () => {
     currentAmount: 0,
     description: ''
   });
+
+  // Handle responsive sidebar on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -221,51 +237,102 @@ const Home = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
+      {/* Toggle Button for Mobile */}
+      <button 
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          zIndex: 1000,
+          backgroundColor: '#1a1a2e',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '8px 12px',
+          cursor: 'pointer',
+          fontSize: '16px',
+          display: window.innerWidth < 768 ? 'block' : 'none'
+        }}
+      >
+        {sidebarOpen ? '?' : '?'}
+      </button>
+
       {/* Sidebar */}
-      <div style={{ width: '280px', backgroundColor: '#1a1a2e', color: 'white', padding: '2rem 1.5rem', overflowY: 'auto' }}>
-        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
-          QuickStack
-        </div>
-        
-        {/* Budget Overview */}
-        <div>
-          <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>BUDGET OVERVIEW</h3>
-          
-          <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#aaa' }}>MONTHLY INCOME</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
-            {income === 0 && (
-              <button onClick={() => setShowIncomeForm(true)} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem', backgroundColor: '#4CAF50', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>Set Income</button>
-            )}
-          </div>
-          
-          {income > 0 && (
-            <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem' }}>
-              <div style={{ fontSize: '0.7rem', color: '#aaa' }}>REMAINING BUDGET</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: isOverBudget ? '#f44336' : '#4CAF50' }}>
-                {isOverBudget ? formatAmount(Math.abs(remainingBudget)) + ' over' : formatAmount(remainingBudget)}
+      <div style={{
+        width: sidebarOpen ? '280px' : '0',
+        minWidth: sidebarOpen ? '280px' : '0',
+        backgroundColor: '#1a1a2e',
+        color: 'white',
+        padding: sidebarOpen ? '2rem 1.5rem' : '0',
+        overflowY: 'auto',
+        transition: 'all 0.3s ease',
+        position: 'relative',
+        zIndex: 999
+      }}>
+        {sidebarOpen && (
+          <>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
+              QuickStack
+            </div>
+            
+            {/* Budget Overview */}
+            <div>
+              <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>BUDGET OVERVIEW</h3>
+              
+              <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.7rem', color: '#aaa' }}>MONTHLY INCOME</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
+                {income === 0 && (
+                  <button onClick={() => setShowIncomeForm(true)} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem', backgroundColor: '#4CAF50', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>Set Income</button>
+                )}
               </div>
-              <div style={{ marginTop: '0.5rem' }}>
-                <div style={{ height: '6px', backgroundColor: '#333', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: Math.min(budgetPercentage, 100) + '%', height: '100%', backgroundColor: getBudgetColor(), borderRadius: '3px' }}></div>
+              
+              {income > 0 && (
+                <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#aaa' }}>REMAINING BUDGET</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: isOverBudget ? '#f44336' : '#4CAF50' }}>
+                    {isOverBudget ? formatAmount(Math.abs(remainingBudget)) + ' over' : formatAmount(remainingBudget)}
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <div style={{ height: '6px', backgroundColor: '#333', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: Math.min(budgetPercentage, 100) + '%', height: '100%', backgroundColor: getBudgetColor(), borderRadius: '3px' }}></div>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '0.25rem' }}>{budgetPercentage.toFixed(1)}% spent</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '0.25rem' }}>{budgetPercentage.toFixed(1)}% spent</div>
+              )}
+            </div>
+
+            {/* Savings Goals Summary */}
+            <div style={{ marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>SAVINGS GOALS</h3>
+              <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem' }}>
+                <div style={{ fontSize: '0.7rem', color: '#aaa' }}>TOTAL SAVED</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ff9800' }}>{formatAmount(totalSaved)}</div>
+                <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '0.25rem' }}>Target: {formatAmount(totalSavingsTarget)}</div>
+                <button onClick={() => setShowGoalForm(true)} style={{ marginTop: '0.75rem', width: '100%', padding: '0.5rem', backgroundColor: '#ff9800', border: 'none', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>+ New Goal</button>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Savings Goals Summary */}
-        <div style={{ marginTop: '2rem' }}>
-          <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>SAVINGS GOALS</h3>
-          <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#aaa' }}>TOTAL SAVED</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ff9800' }}>{formatAmount(totalSaved)}</div>
-            <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '0.25rem' }}>Target: {formatAmount(totalSavingsTarget)}</div>
-            <button onClick={() => setShowGoalForm(true)} style={{ marginTop: '0.75rem', width: '100%', padding: '0.5rem', backgroundColor: '#ff9800', border: 'none', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>+ New Goal</button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
+
+      {/* Overlay for mobile when sidebar is open */}
+      {sidebarOpen && window.innerWidth < 768 && (
+        <div 
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 998
+          }}
+        />
+      )}
 
       {/* Main Content */}
       <div style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
@@ -299,7 +366,7 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Set Income Form - FIXED: Input can be empty */}
+        {/* Set Income Form */}
         {showIncomeForm && (
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
             <h3 style={{ marginBottom: '1rem' }}>Set Monthly Income</h3>
