@@ -15,16 +15,7 @@ const Navbar = () => {
     <nav style={styles.nav}>
       <div style={styles.container}>
         <Link to="/" style={styles.logo}>
-          <img 
-            src="/quicksatcklogo.png" 
-            alt="QuickStack Logo" 
-            style={styles.logoImage}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.style.display = 'none';
-            }}
-          />
-          <span style={styles.logoFallback}>?? QuickStack</span>
+          <span style={styles.logoText}>QuickStack</span>
         </Link>
         <div style={styles.tagline}>
           <span style={styles.taglineText}>TRACK EXPENSES. TAKE CONTROL.</span>
@@ -64,16 +55,10 @@ const styles = {
     gap: '10px',
     textDecoration: 'none',
   },
-  logoImage: {
-    height: '45px',
-    width: 'auto',
-    objectFit: 'contain',
-  },
-  logoFallback: {
+  logoText: {
     color: 'white',
     fontSize: '1.5rem',
     fontWeight: 'bold',
-    display: 'block',
   },
   tagline: {
     flex: 1,
