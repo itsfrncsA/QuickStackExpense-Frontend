@@ -226,7 +226,7 @@ const Home = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
-      {/* Toggle Button - Works on ALL devices */}
+      {/* Toggle Button - No emojis, no question marks */}
       <button 
         onClick={toggleSidebar}
         style={{
@@ -240,13 +240,10 @@ const Home = () => {
           borderRadius: '8px',
           padding: '8px 12px',
           cursor: 'pointer',
-          fontSize: '14px',
+          fontSize: '13px',
           fontWeight: 'bold',
           boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-          transition: 'left 0.3s ease',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '5px'
+          transition: 'left 0.3s ease'
         }}
       >
         {sidebarOpen ? '? Hide Menu' : '? Show Menu'}
@@ -268,27 +265,27 @@ const Home = () => {
       }}>
         {sidebarOpen && (
           <>
-            {/* Logo */}
+            {/* Logo - text only, no image to avoid issues */}
             <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
+              textAlign: 'center',
               marginBottom: '2rem',
-              marginTop: '1rem',
-              padding: '0.5rem'
+              marginTop: '1rem'
             }}>
-              <img 
-                src="/layout.png" 
-                alt="QuickStack Logo" 
-                style={{ 
-                  maxWidth: '100%', 
-                  height: 'auto',
-                  maxHeight: '50px',
-                  objectFit: 'contain'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 'bold',
+                color: 'white',
+                letterSpacing: '1px'
+              }}>
+                QuickStack
+              </div>
+              <div style={{ 
+                fontSize: '0.65rem', 
+                color: '#aaa',
+                marginTop: '0.25rem'
+              }}>
+                Expense Tracker
+              </div>
             </div>
             
             {/* Budget Overview */}
