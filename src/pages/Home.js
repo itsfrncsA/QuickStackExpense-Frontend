@@ -8,6 +8,11 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({ total: 0, recentTotal: 0, count: 0, byCategory: {} });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showIncomeForm, setShowIncomeForm] = useState(false);
+  const [income, setIncome] = useState(() => {
+    const saved = localStorage.getItem('monthlyIncome');
+    return saved ? parseFloat(saved) : 0;
+  });
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [formData, setFormData] = useState({
@@ -16,7 +21,9 @@ const Home = () => {
     category: 'Food',
     date: new Date().toISOString().split('T')[0],
     description: '',
+    type: 'expense'
   });
+  const [incomeAmount, setIncomeAmount] = useState(income);
 
   const fetchData = async () => {
     try {
@@ -41,11 +48,28 @@ const Home = () => {
     fetchData();
   }, []);
 
+  const handleSetIncome = () => {
+    if (incomeAmount <= 0) {
+      alert('Please enter a valid income amount');
+      return;
+    }
+    setIncome(incomeAmount);
+    localStorage.setItem('monthlyIncome', incomeAmount);
+    setShowIncomeForm(false);
+    alert('Monthly income set to ' + formatAmount(incomeAmount));
+  };
+
   const handleAddExpense = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(API_URL + '/api/expenses', formData, {
+      await axios.post(API_URL + '/api/expenses', {
+        title: formData.title,
+        amount: formData.amount,
+        category: formData.category,
+        date: formData.date,
+        description: formData.description
+      }, {
         headers: { 'x-auth-token': token }
       });
       setFormData({
@@ -54,6 +78,7 @@ const Home = () => {
         category: 'Food',
         date: new Date().toISOString().split('T')[0],
         description: '',
+        type: 'expense'
       });
       setShowAddForm(false);
       fetchData();
@@ -108,9 +133,16 @@ const Home = () => {
     }).format(amount || 0);
   };
 
-  // No emojis - just text
-  const getCategoryLabel = (cat) => {
-    return cat;
+  // Budget calculations
+  const totalExpenses = summary.total;
+  const remainingBudget = income - totalExpenses;
+  const budgetPercentage = income > 0 ? (totalExpenses / income) * 100 : 0;
+  const isOverBudget = remainingBudget < 0;
+
+  const getBudgetColor = () => {
+    if (isOverBudget) return '#f44336';
+    if (budgetPercentage >= 80) return '#ff9800';
+    return '#4CAF50';
   };
 
   const categories = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Healthcare', 'Education', 'Other'];
@@ -123,18 +155,42 @@ const Home = () => {
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
       {/* Sidebar */}
       <div style={{ width: '280px', backgroundColor: '#1a1a2e', color: 'white', padding: '2rem 1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 'bold' }}>
-          <span>QuickStack</span>
+        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
+          QuickStack
         </div>
         
-        <div style={{ marginTop: 'auto' }}>
-          <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>Wallet</h3>
-          <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: '#aaa' }}>Cash Wallet</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4CAF50' }}>{formatAmount(summary.total)}</div>
-            </div>
+        <div>
+          <h3 style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>Budget Overview</h3>
+          
+          {/* Income Display */}
+          <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.7rem', color: '#aaa' }}>MONTHLY INCOME</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
+            {income === 0 && (
+              <button 
+                onClick={() => setShowIncomeForm(true)} 
+                style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem', backgroundColor: '#4CAF50', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}
+              >
+                Set Income
+              </button>
+            )}
           </div>
+          
+          {/* Budget Progress */}
+          {income > 0 && (
+            <div style={{ backgroundColor: '#16213e', borderRadius: '12px', padding: '1rem' }}>
+              <div style={{ fontSize: '0.7rem', color: '#aaa' }}>REMAINING BUDGET</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: isOverBudget ? '#f44336' : '#4CAF50' }}>
+                {isOverBudget ? formatAmount(Math.abs(remainingBudget)) + ' over' : formatAmount(remainingBudget)}
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ height: '6px', backgroundColor: '#333', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ width: Math.min(budgetPercentage, 100) + '%', height: '100%', backgroundColor: getBudgetColor(), borderRadius: '3px' }}></div>
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '0.25rem' }}>{budgetPercentage.toFixed(1)}% spent</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -142,25 +198,54 @@ const Home = () => {
       <div style={{ flex: 1, padding: '2rem' }}>
         <h1 style={{ fontSize: '2rem', color: '#1a1a2e', marginBottom: '2rem' }}>Dashboard</h1>
         
-        {/* Stats Cards - No emojis */}
+        {/* Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          {/* Income Card */}
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
-            <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Balance</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
+            <div style={{ fontSize: '0.85rem', color: '#666' }}>Monthly Income</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
+            {income === 0 && (
+              <button onClick={() => setShowIncomeForm(true)} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem', backgroundColor: '#4CAF50', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>Set Income</button>
+            )}
           </div>
+          
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
             <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Expenses</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f44336' }}>{formatAmount(totalExpenses)}</div>
           </div>
+          
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
-            <div style={{ fontSize: '0.85rem', color: '#666' }}>Last 30 Days</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.recentTotal)}</div>
+            <div style={{ fontSize: '0.85rem', color: '#666' }}>Remaining Budget</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isOverBudget ? '#f44336' : '#4CAF50' }}>
+              {income > 0 ? formatAmount(remainingBudget) : 'Set income first'}
+            </div>
           </div>
+          
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
             <div style={{ fontSize: '0.85rem', color: '#666' }}>Transactions</div>
             <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{summary.count}</div>
           </div>
         </div>
+
+        {/* Set Income Form */}
+        {showIncomeForm && (
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Set Monthly Income</h3>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.5rem' }}>?</span>
+              <input 
+                type="number" 
+                step="0.01" 
+                placeholder="Enter your monthly income" 
+                value={incomeAmount} 
+                onChange={(e) => setIncomeAmount(parseFloat(e.target.value) || 0)} 
+                style={{ flex: 1, padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }} 
+              />
+              <button onClick={handleSetIncome} style={{ padding: '0.75rem 1.5rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setShowIncomeForm(false)} style={{ padding: '0.75rem 1.5rem', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Add Expense Button */}
         {!showAddForm ? (
@@ -168,11 +253,11 @@ const Home = () => {
             onClick={() => setShowAddForm(true)} 
             style={{ width: '100%', padding: '1rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', marginBottom: '2rem' }}
           >
-            + Add New Transaction
+            + Add New Expense
           </button>
         ) : (
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>New Transaction</h3>
+            <h3 style={{ marginBottom: '1rem' }}>New Expense</h3>
             <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <input 
                 type="text" 
@@ -196,9 +281,7 @@ const Home = () => {
                 onChange={(e) => setFormData({...formData, category: e.target.value})} 
                 style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px' }}
               >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
-                ))}
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
               <input 
                 type="date" 
@@ -223,11 +306,11 @@ const Home = () => {
 
         {/* Transactions List */}
         <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Recent Transactions</h3>
+          <h3 style={{ marginBottom: '1rem' }}>Recent Expenses</h3>
           {expenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
-              <p>No transactions yet</p>
-              <p style={{ fontSize: '0.85rem' }}>Click "Add New Transaction" to get started</p>
+              <p>No expenses yet</p>
+              <p style={{ fontSize: '0.85rem' }}>Click "Add New Expense" to get started</p>
             </div>
           ) : (
             <div>
@@ -268,7 +351,7 @@ const Home = () => {
                     ) : (
                       <>
                         <div style={{ fontWeight: '500' }}>{expense.title}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#999' }}>{new Date(expense.date).toLocaleDateString()}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#999' }}>{expense.category} - {new Date(expense.date).toLocaleDateString()}</div>
                         {expense.description && <div style={{ fontSize: '0.75rem', color: '#aaa' }}>{expense.description}</div>}
                       </>
                     )}
