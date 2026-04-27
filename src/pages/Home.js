@@ -262,10 +262,8 @@ const Home = () => {
             }}
             onError={(e) => {
               e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
             }}
           />
-          <div style={{ display: 'none', fontSize: '0.8rem', color: 'white' }}>Menu</div>
         </div>
         
         {sidebarOpen && (
@@ -316,8 +314,7 @@ const Home = () => {
       <div style={{ 
         flex: 1, 
         padding: '1.5rem',
-        overflowY: 'auto',
-        marginLeft: sidebarOpen ? '0' : '0'
+        overflowY: 'auto'
       }}>
         <h1 style={{ fontSize: '1.5rem', color: '#1a1a2e', marginBottom: '1rem' }}>Dashboard</h1>
         
