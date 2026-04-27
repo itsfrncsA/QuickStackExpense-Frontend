@@ -129,14 +129,14 @@ const Home = () => {
         {/* Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.5rem' }}>??</span>
+            <span style={{ fontSize: '2.5rem' }}></span>
             <div>
               <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Balance</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
             </div>
           </div>
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.5rem' }}>??</span>
+            <span style={{ fontSize: '2.5rem' }}></span>
             <div>
               <div style={{ fontSize: '0.85rem', color: '#666' }}>Total Expenses</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(summary.total)}</div>
