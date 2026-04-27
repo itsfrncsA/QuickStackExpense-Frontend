@@ -15,8 +15,21 @@ const Navbar = () => {
     <nav style={styles.nav}>
       <div style={styles.container}>
         <Link to="/" style={styles.logo}>
-          💰 QuickStack Expense Tracker
+          <img 
+            src="/quicksatcklogo.png" 
+            alt="QuickStack Logo" 
+            style={styles.logoImage}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
+          />
+          <span style={styles.logoFallback}>?? QuickStack</span>
         </Link>
+        <div style={styles.tagline}>
+          <span style={styles.taglineText}>TRACK EXPENSES. TAKE CONTROL.</span>
+        </div>
         {user && (
           <div style={styles.navLinks}>
             <span style={styles.welcome}>Welcome, {user.name}!</span>
@@ -32,22 +45,49 @@ const Navbar = () => {
 
 const styles = {
   nav: {
-    backgroundColor: '#2c3e50',
-    padding: '1rem',
+    backgroundColor: '#1a1a2e',
+    padding: '1rem 2rem',
     color: 'white',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
   },
   container: {
-    maxWidth: '1200px',
+    maxWidth: '1400px',
     margin: '0 auto',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '1rem',
   },
   logo: {
-    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
     textDecoration: 'none',
+  },
+  logoImage: {
+    height: '45px',
+    width: 'auto',
+    objectFit: 'contain',
+  },
+  logoFallback: {
+    color: 'white',
     fontSize: '1.5rem',
     fontWeight: 'bold',
+    display: 'block',
+  },
+  tagline: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  taglineText: {
+    fontSize: '0.85rem',
+    letterSpacing: '2px',
+    color: '#aaa',
+    fontWeight: '500',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: '0.25rem 1rem',
+    borderRadius: '20px',
   },
   navLinks: {
     display: 'flex',
@@ -56,15 +96,31 @@ const styles = {
   },
   welcome: {
     marginRight: '1rem',
+    fontSize: '0.9rem',
+    color: '#ddd',
   },
   logoutBtn: {
-    padding: '0.5rem 1rem',
+    padding: '0.5rem 1.25rem',
     backgroundColor: '#e74c3c',
     color: 'white',
     border: 'none',
-    borderRadius: '5px',
+    borderRadius: '8px',
     cursor: 'pointer',
+    fontWeight: '500',
+    transition: 'background-color 0.3s',
   },
 };
+
+// Add hover style
+const styleSheet = document.createElement('style');
+styleSheet.textContent = \
+  button:hover {
+    background-color: #c0392b !important;
+  }
+  .logo-image:hover {
+    opacity: 0.9;
+  }
+\;
+document.head.appendChild(styleSheet);
 
 export default Navbar;
