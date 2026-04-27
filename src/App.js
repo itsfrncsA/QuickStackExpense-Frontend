@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import './animations.css';
 
 const LoadingScreen = () => (
   <div style={{
@@ -25,14 +26,6 @@ const LoadingScreen = () => (
       animation: 'spin 1s linear infinite'
     }}></div>
     <p style={{ color: '#7f8c8d', fontSize: '16px' }}>Loading your dashboard...</p>
-    <style>
-      {
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      }
-    </style>
   </div>
 );
 
