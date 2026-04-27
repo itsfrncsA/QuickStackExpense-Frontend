@@ -131,8 +131,13 @@ const Home = () => {
     return colors[category] || '#b2bec3';
   };
 
-  if (loading) return <div style={styles.loading}>Loading expenses...</div>;
-  if (error) return <div style={styles.error}>Error: {error}</div>;
+  if (loading) {
+    return <div style={styles.loading}>Loading expenses...</div>;
+  }
+  
+  if (error) {
+    return <div style={styles.error}>Error: {error}</div>;
+  }
 
   return (
     <div style={styles.container}>
@@ -164,9 +169,14 @@ const Home = () => {
           <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required style={styles.input} />
           <input type="number" step="0.01" placeholder="Amount (?)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} required style={styles.input} />
           <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} style={styles.input}>
-            <option>Food</option><option>Transport</option><option>Shopping</option>
-            <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
-            <option>Education</option><option>Other</option>
+            <option>Food</option>
+            <option>Transport</option>
+            <option>Shopping</option>
+            <option>Entertainment</option>
+            <option>Bills</option>
+            <option>Healthcare</option>
+            <option>Education</option>
+            <option>Other</option>
           </select>
           <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={styles.input} />
           <input type="text" placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={styles.input} />
@@ -181,10 +191,16 @@ const Home = () => {
         ) : (
           <table style={styles.table}>
             <thead>
-              <tr><th>Title</th><th>Amount</th><th>Category</th><th>Date</th><th>Actions</th></tr>
+              <tr>
+                <th>Title</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
             </thead>
             <tbody>
-              {expenses.map(expense => (
+              {expenses.map((expense) => (
                 <tr key={expense._id}>
                   {editingId === expense._id ? (
                     <>
@@ -192,16 +208,21 @@ const Home = () => {
                       <td><input type="number" value={editData.amount} onChange={(e) => setEditData({...editData, amount: e.target.value})} style={styles.editInput} /></td>
                       <td>
                         <select value={editData.category} onChange={(e) => setEditData({...editData, category: e.target.value})} style={styles.editInput}>
-                          <option>Food</option><option>Transport</option><option>Shopping</option>
-                          <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
-                          <option>Education</option><option>Other</option>
+                          <option>Food</option>
+                          <option>Transport</option>
+                          <option>Shopping</option>
+                          <option>Entertainment</option>
+                          <option>Bills</option>
+                          <option>Healthcare</option>
+                          <option>Education</option>
+                          <option>Other</option>
                         </select>
-                       </td>
+                      </td>
                       <td><input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={styles.editInput} /></td>
                       <td>
                         <button onClick={() => handleUpdate(expense._id)} style={styles.saveBtn}>Save</button>
                         <button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button>
-                       </td>
+                      </td>
                     </>
                   ) : (
                     <>
@@ -212,10 +233,10 @@ const Home = () => {
                       <td>
                         <button onClick={() => handleEdit(expense)} style={styles.editBtn}>Edit</button>
                         <button onClick={() => handleDelete(expense._id)} style={styles.deleteBtn}>Delete</button>
-                       </td>
+                      </td>
                     </>
                   )}
-                </td>
+                </tr>
               ))}
             </tbody>
           </table>
