@@ -169,6 +169,7 @@ const Home = () => {
             <option>Education</option><option>Other</option>
           </select>
           <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={styles.input} />
+          <input type="text" placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={styles.input} />
           <button type="submit" style={styles.addButton}>Add Expense</button>
         </form>
       </div>
@@ -194,8 +195,11 @@ const Home = () => {
                         <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
                         <option>Education</option><option>Other</option>
                       </select></td>
-                      <td><input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={styles.editInput} /></td>
-                      <td><button onClick={() => handleUpdate(expense._id)} style={styles.saveBtn}>Save</button><button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button></td>
+                      <td><input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={styles.editInput} /><table>
+                      <td>
+                        <button onClick={() => handleUpdate(expense._id)} style={styles.saveBtn}>Save</button>
+                        <button onClick={() => setEditingId(null)} style={styles.cancelBtn}>Cancel</button>
+                      </td>
                     </>
                   ) : (
                     <>
@@ -203,7 +207,10 @@ const Home = () => {
                       <td style={styles.amountCell}>{formatAmount(expense.amount)}</td>
                       <td><span style={{...styles.category, backgroundColor: getCategoryColor(expense.category)}}>{expense.category}</span></td>
                       <td>{new Date(expense.date).toLocaleDateString()}</td>
-                      <td><button onClick={() => handleEdit(expense)} style={styles.editBtn}>Edit</button><button onClick={() => handleDelete(expense._id)} style={styles.deleteBtn}>Delete</button></td>
+                      <td>
+                        <button onClick={() => handleEdit(expense)} style={styles.editBtn}>Edit</button>
+                        <button onClick={() => handleDelete(expense._id)} style={styles.deleteBtn}>Delete</button>
+                      </td>
                     </>
                   )}
                 </tr>

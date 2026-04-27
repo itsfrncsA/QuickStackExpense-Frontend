@@ -1,8 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
-
-// Directly use the Render backend URL
-const API_URL = 'https://quickstackexpense.onrender.com';
+import API_URL from '../config';
 
 const AuthContext = createContext();
 
