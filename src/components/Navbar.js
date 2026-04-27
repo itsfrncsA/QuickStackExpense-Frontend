@@ -22,7 +22,6 @@ const Navbar = () => {
             onError={(e) => {
               e.target.onerror = null;
               e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
             }}
           />
           <span style={styles.logoFallback}>?? QuickStack</span>
@@ -107,20 +106,7 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '500',
-    transition: 'background-color 0.3s',
   },
 };
-
-// Add hover style
-const styleSheet = document.createElement('style');
-styleSheet.textContent = \
-  button:hover {
-    background-color: #c0392b !important;
-  }
-  .logo-image:hover {
-    opacity: 0.9;
-  }
-\;
-document.head.appendChild(styleSheet);
 
 export default Navbar;
