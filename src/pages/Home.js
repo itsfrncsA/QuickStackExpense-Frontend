@@ -5,7 +5,6 @@ import DashboardCards from '../components/DashboardCards';
 import { formatAmount, getLocal, setLocal, categories, categoryDisplay } from '../utils/helpers';
 
 const Home = () => {
-  // State
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -25,20 +24,18 @@ const Home = () => {
     amount: '',
     category: 'Food',
     date: new Date().toISOString().split('T')[0],
-    description: '',
+    description: ''
   });
   const [goalForm, setGoalForm] = useState({ name: '', targetAmount: '', description: '' });
   const [incomeAmount, setIncomeAmount] = useState('');
   const [notification, setNotification] = useState(null);
 
-  // Notification timer
   useEffect(() => {
     if (!notification) return;
     const timer = setTimeout(() => setNotification(null), 3000);
     return () => clearTimeout(timer);
   }, [notification]);
 
-  // Fetch data
   const fetchData = useCallback(async () => {
     try {
       const [expensesRes, summaryRes] = await Promise.all([
@@ -48,7 +45,7 @@ const Home = () => {
       setExpenses(expensesRes.data || []);
       setSummary(summaryRes.data || { total: 0, recentTotal: 0, count: 0, byCategory: {} });
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -58,7 +55,6 @@ const Home = () => {
     fetchData();
   }, [fetchData]);
 
-  // Check 50% alert
   useEffect(() => {
     const total = summary.total || 0;
     if (income > 0 && total > income * 0.5) {
@@ -66,7 +62,6 @@ const Home = () => {
     }
   }, [summary.total, income]);
 
-  // Memoized filtered expenses
   const filteredExpensesList = useMemo(() => {
     return expenses.filter(exp => {
       if (selectedCategory !== 'All' && exp.category !== selectedCategory) return false;
@@ -85,27 +80,26 @@ const Home = () => {
     });
   }, [expenses, selectedCategory, searchTerm, dateRange]);
 
-  // Memoized grouped expenses
   const groupedExpenses = useMemo(() => {
     return filteredExpensesList.reduce((acc, exp) => {
       const key = exp.category || 'Other';
       if (!acc[key]) acc[key] = { count: 0, total: 0, items: [] };
-      acc[key].count++;
+      acc[key].count += 1;
       acc[key].total += exp.amount || 0;
       acc[key].items.push(exp);
       return acc;
     }, {});
   }, [filteredExpensesList]);
 
-  // Calculations
   const totalExpenses = summary.total || 0;
   const remainingBudget = (income || 0) - totalExpenses;
   const budgetPercentage = income > 0 ? (totalExpenses / income) * 100 : 0;
   const totalSaved = savingsGoals.reduce((sum, goal) => sum + (goal.currentAmount || 0), 0);
   const mainSavingsGoal = savingsGoals[0];
-  const savingsPercentage = mainSavingsGoal?.targetAmount > 0 ? ((mainSavingsGoal.currentAmount || 0) / mainSavingsGoal.targetAmount) * 100 : 0;
+  const savingsPercentage = mainSavingsGoal?.targetAmount > 0 
+    ? ((mainSavingsGoal.currentAmount || 0) / mainSavingsGoal.targetAmount) * 100 
+    : 0;
 
-  // Handlers
   const handleSetIncome = () => {
     const incomeValue = parseFloat(incomeAmount);
     if (isNaN(incomeValue) || incomeValue <= 0) {
@@ -161,7 +155,7 @@ const Home = () => {
         amount: '',
         category: 'Food',
         date: new Date().toISOString().split('T')[0],
-        description: '',
+        description: ''
       });
       setModal(null);
       fetchData();
@@ -260,11 +254,15 @@ const Home = () => {
     text: darkMode ? '#FFFFFF' : '#1A1A2E',
     textSecondary: darkMode ? '#A0A0B0' : '#666666',
     border: darkMode ? '#2A2A3E' : '#E5E7EB',
-    cardBg: darkMode ? '#1E1E2E' : '#FFFFFF',
+    cardBg: darkMode ? '#1E1E2E' : '#FFFFFF'
   };
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: styles.background, color: styles.text }}>Loading your finances...</div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: styles.background, color: styles.text }}>
+        Loading your finances...
+      </div>
+    );
   }
 
   return (
@@ -272,7 +270,6 @@ const Home = () => {
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
-        {/* Notification */}
         {notification && (
           <div style={{
             position: 'fixed',
@@ -299,7 +296,6 @@ const Home = () => {
           onSetGoal={() => setModal('goal')}
         />
 
-        {/* Savings Goal Progress */}
         {mainSavingsGoal && (
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '16px', padding: '1.25rem', marginBottom: '2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -317,7 +313,7 @@ const Home = () => {
               <span style={{ color: '#3B82F6', fontSize: '0.7rem' }}>
                 {savingsPercentage >= 100 
                   ? 'Congratulations! Goal achieved!' 
-                  : You are % there! Only  more to go!}
+                  : 'You are ' + savingsPercentage.toFixed(0) + '% there! Only ' + formatAmount(mainSavingsGoal.targetAmount - mainSavingsGoal.currentAmount) + ' more to go!'}
               </span>
             </div>
             <button
@@ -342,9 +338,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Charts Section */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-          {/* Expense Categories Chart - Text-based */}
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '16px', padding: '1.25rem' }}>
             <h3 style={{ color: styles.text, marginBottom: '1rem', fontSize: '1rem' }}>Expense Categories</h3>
             {Object.keys(summary.byCategory || {}).length === 0 ? (
@@ -367,7 +361,6 @@ const Home = () => {
             )}
           </div>
 
-          {/* Income vs Expenses Chart - Text-based */}
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '16px', padding: '1.25rem' }}>
             <h3 style={{ color: styles.text, marginBottom: '1rem', fontSize: '1rem' }}>Income vs Expenses</h3>
             <div style={{ marginBottom: '1rem' }}>
@@ -397,7 +390,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Filters and Search */}
         <div style={{ backgroundColor: styles.cardBg, borderRadius: '16px', padding: '1rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -408,17 +400,17 @@ const Home = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid ' + styles.border, backgroundColor: styles.background, color: styles.text, fontSize: '0.85rem', width: '180px' }}
               />
-              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid ' + styles.border, backgroundColor: styles.background, color: styles.text, fontSize: '0.85rem' }}>
+              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid ' + styles.border, backgroundColor: styles.background, color: styles.text }}>
                 {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
-              <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid ' + styles.border, backgroundColor: styles.background, color: styles.text, fontSize: '0.85rem' }}>
+              <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid ' + styles.border, backgroundColor: styles.background, color: styles.text }}>
                 <option value="all">All Time</option>
                 <option value="week">Last 7 Days</option>
                 <option value="month">Last 30 Days</option>
               </select>
             </div>
             <div style={{ position: 'relative' }}>
-              <button onClick={() => setShowExportMenu(!showExportMenu)} style={{ padding: '0.5rem 1rem', backgroundColor: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Export CSV</button>
+              <button onClick={() => setShowExportMenu(!showExportMenu)} style={{ padding: '0.5rem 1rem', backgroundColor: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Export CSV</button>
               {showExportMenu && (
                 <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.25rem', backgroundColor: styles.cardBg, borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10 }}>
                   <button onClick={handleExport} style={{ display: 'block', width: '100%', padding: '0.5rem 1rem', border: 'none', backgroundColor: 'transparent', color: styles.text, cursor: 'pointer', textAlign: 'left' }}>Download CSV</button>
@@ -428,7 +420,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Expense List */}
         <div style={{ backgroundColor: styles.cardBg, borderRadius: '16px', padding: '1.25rem' }}>
           <h3 style={{ color: styles.text, marginBottom: '1rem', fontSize: '1rem' }}>Recent Expenses</h3>
           {Object.keys(groupedExpenses).length === 0 ? (
@@ -466,7 +457,6 @@ const Home = () => {
         </div>
       </main>
 
-      {/* Floating Action Button */}
       <button
         onClick={() => setModal('expense')}
         style={{
@@ -491,7 +481,6 @@ const Home = () => {
         +
       </button>
 
-      {/* Add Expense Modal */}
       {modal === 'expense' && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '20px', padding: '1.5rem', width: '90%', maxWidth: '450px' }}>
@@ -513,7 +502,6 @@ const Home = () => {
         </div>
       )}
 
-      {/* Add Funds Modal */}
       {showAddFundsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '20px', padding: '1.5rem', width: '90%', maxWidth: '350px' }}>
@@ -527,7 +515,6 @@ const Home = () => {
         </div>
       )}
 
-      {/* Income Modal */}
       {modal === 'income' && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '20px', padding: '1.5rem', width: '90%', maxWidth: '350px' }}>
@@ -541,7 +528,6 @@ const Home = () => {
         </div>
       )}
 
-      {/* Goal Modal */}
       {modal === 'goal' && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div style={{ backgroundColor: styles.cardBg, borderRadius: '20px', padding: '1.5rem', width: '90%', maxWidth: '350px' }}>
