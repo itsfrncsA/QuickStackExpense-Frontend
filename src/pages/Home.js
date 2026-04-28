@@ -223,7 +223,23 @@ const Home = () => {
   const savingsPercentage = mainSavingsGoal?.targetAmount > 0 ? ((mainSavingsGoal.currentAmount || 0) / mainSavingsGoal.targetAmount) * 100 : 0;
 
   // Group expenses by category
-  const groupedExpenses = (filteredExpenses() || []).reduce((acc, exp) => {
+  const filteredExpensesList = (expenses || []).filter(exp => {
+    if (selectedCategory !== 'All' && exp.category !== selectedCategory) return false;
+    if (searchTerm && !(exp.title || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (dateRange === 'week') {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      if (new Date(exp.date) < weekAgo) return false;
+    }
+    if (dateRange === 'month') {
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      if (new Date(exp.date) < monthAgo) return false;
+    }
+    return true;
+  });
+
+  const groupedExpenses = filteredExpensesList.reduce((acc, exp) => {
     const key = exp.category || 'Other';
     if (!acc[key]) acc[key] = { count: 0, total: 0, items: [], category: key };
     acc[key].count++;
@@ -231,24 +247,6 @@ const Home = () => {
     acc[key].items.push(exp);
     return acc;
   }, {});
-
-  const filteredExpenses = () => {
-    return (expenses || []).filter(exp => {
-      if (selectedCategory !== 'All' && exp.category !== selectedCategory) return false;
-      if (searchTerm && !(exp.title || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      if (dateRange === 'week') {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        if (new Date(exp.date) < weekAgo) return false;
-      }
-      if (dateRange === 'month') {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        if (new Date(exp.date) < monthAgo) return false;
-      }
-      return true;
-    });
-  };
 
   const categories = ['All', 'Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Healthcare', 'Education', 'Other'];
   const categoryDisplay = {
@@ -315,7 +313,6 @@ const Home = () => {
         top: 0,
         zIndex: 100,
         backdropFilter: 'blur(10px)',
-        backgroundColor: theme.cardBg + 'CC'
       }}>
         <div style={{
           display: 'flex',
@@ -403,10 +400,7 @@ const Home = () => {
             transition: 'transform 0.2s, boxShadow 0.2s',
             cursor: 'pointer',
             borderLeft: '4px solid #10B981'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = theme.hoverShadow; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = theme.cardShadow; }}
-          >
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Income</span>
               <span style={{ fontSize: '1.5rem' }}>??</span>
@@ -442,10 +436,7 @@ const Home = () => {
             boxShadow: theme.cardShadow,
             transition: 'transform 0.2s, boxShadow 0.2s',
             borderLeft: '4px solid #DC2626'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = theme.hoverShadow; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = theme.cardShadow; }}
-          >
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Expenses</span>
               <span style={{ fontSize: '1.5rem' }}>??</span>
@@ -463,10 +454,7 @@ const Home = () => {
             boxShadow: theme.cardShadow,
             transition: 'transform 0.2s, boxShadow 0.2s',
             borderLeft: '4px solid #14B8A6'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = theme.hoverShadow; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = theme.cardShadow; }}
-          >
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#14B8A6', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Remaining Budget</span>
               <span style={{ fontSize: '1.5rem' }}>??</span>
@@ -499,10 +487,7 @@ const Home = () => {
             boxShadow: theme.cardShadow,
             transition: 'transform 0.2s, boxShadow 0.2s',
             borderLeft: '4px solid #3B82F6'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = theme.hoverShadow; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = theme.cardShadow; }}
-          >
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#3B82F6', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Savings</span>
               <span style={{ fontSize: '1.5rem' }}>??</span>
@@ -565,7 +550,7 @@ const Home = () => {
             </div>
             <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: theme.background, borderRadius: '8px' }}>
               <span style={{ color: '#3B82F6', fontSize: '0.7rem' }}>
-                ?? {savingsPercentage >= 100 ? 'Congratulations! Goal achieved!' : Only  more to go!}
+                {savingsPercentage >= 100 ? '?? Congratulations! Goal achieved!' : ?? Only  more to go!}
               </span>
             </div>
           </div>
@@ -791,8 +776,7 @@ const Home = () => {
                   padding: '0.75rem',
                   backgroundColor: theme.background,
                   borderRadius: '12px',
-                  marginBottom: '0.5rem',
-                  transition: 'background 0.2s'
+                  marginBottom: '0.5rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ fontSize: '1.5rem' }}>{categoryDisplay[category]?.split(' ')[0] || '??'}</span>
@@ -813,8 +797,7 @@ const Home = () => {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '0.5rem 0.5rem 0.5rem 2.5rem',
-                      borderBottom: '1px solid ' + theme.border,
-                      transition: 'background 0.2s'
+                      borderBottom: '1px solid ' + theme.border
                     }}
                   >
                     <div>
@@ -835,11 +818,8 @@ const Home = () => {
                           color: theme.textSecondary,
                           fontSize: '1rem',
                           padding: '0.25rem',
-                          borderRadius: '4px',
-                          transition: 'color 0.2s'
+                          borderRadius: '4px'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#DC2626'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = theme.textSecondary}
                       >
                         ???
                       </button>
@@ -873,14 +853,6 @@ const Home = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.08)';
-          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.25)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
         }}
       >
         +
