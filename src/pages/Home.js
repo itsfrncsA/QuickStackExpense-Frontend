@@ -39,7 +39,6 @@ const Home = () => {
   const [incomeAmount, setIncomeAmount] = useState('');
   const [notification, setNotification] = useState(null);
 
-  // Helper functions
   const formatAmount = (amount) => {
     const numAmount = amount && !isNaN(amount) ? amount : 0;
     return new Intl.NumberFormat('en-PH', {
@@ -74,7 +73,6 @@ const Home = () => {
     fetchData();
   }, []);
 
-  // Check expense alert (50% of income)
   useEffect(() => {
     const total = summary.total || 0;
     if (income > 0 && total > income * 0.5) {
@@ -95,7 +93,6 @@ const Home = () => {
     showNotification('Monthly income set to ' + formatAmount(incomeValue), 'success');
   };
 
-  // Check for duplicate expense
   const checkDuplicateExpense = (newExpense) => {
     return expenses.some(expense => 
       expense.title?.toLowerCase() === newExpense.title?.toLowerCase() &&
@@ -214,7 +211,6 @@ const Home = () => {
     setShowExportMenu(false);
   };
 
-  // Calculate dashboard values with defaults
   const totalExpenses = summary.total || 0;
   const remainingBudget = (income || 0) - totalExpenses;
   const budgetPercentage = income > 0 ? (totalExpenses / income) * 100 : 0;
@@ -222,7 +218,6 @@ const Home = () => {
   const mainSavingsGoal = savingsGoals[0];
   const savingsPercentage = mainSavingsGoal?.targetAmount > 0 ? ((mainSavingsGoal.currentAmount || 0) / mainSavingsGoal.targetAmount) * 100 : 0;
 
-  // Group expenses by category
   const filteredExpensesList = (expenses || []).filter(exp => {
     if (selectedCategory !== 'All' && exp.category !== selectedCategory) return false;
     if (searchTerm && !(exp.title || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -250,14 +245,14 @@ const Home = () => {
 
   const categories = ['All', 'Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Healthcare', 'Education', 'Other'];
   const categoryDisplay = {
-    Food: '?? Food',
-    Transport: '?? Transport',
-    Shopping: '??? Shopping',
-    Entertainment: '?? Entertainment',
-    Bills: '?? Bills',
-    Healthcare: '?? Healthcare',
-    Education: '?? Education',
-    Other: '?? Other'
+    Food: 'Food',
+    Transport: 'Transport',
+    Shopping: 'Shopping',
+    Entertainment: 'Entertainment',
+    Bills: 'Bills',
+    Healthcare: 'Healthcare',
+    Education: 'Education',
+    Other: 'Other'
   };
 
   const styles = {
@@ -304,15 +299,14 @@ const Home = () => {
       minHeight: '100vh',
       fontFamily: "'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif"
     }}>
-      {/* Header - Single welcome message */}
+      {/* Header */}
       <header style={{
         backgroundColor: theme.cardBg,
         borderBottom: '1px solid ' + theme.border,
         padding: '1rem 2rem',
         position: 'sticky',
         top: 0,
-        zIndex: 100,
-        backdropFilter: 'blur(10px)',
+        zIndex: 100
       }}>
         <div style={{
           display: 'flex',
@@ -384,7 +378,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Dashboard Cards - 4 Card Grid */}
+        {/* Dashboard Cards */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -398,12 +392,11 @@ const Home = () => {
             padding: '1.25rem',
             boxShadow: theme.cardShadow,
             transition: 'transform 0.2s, boxShadow 0.2s',
-            cursor: 'pointer',
             borderLeft: '4px solid #10B981'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Income</span>
-              <span style={{ fontSize: '1.5rem' }}>??</span>
+              <span style={{ fontSize: '1.5rem' }}>$</span>
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#10B981', marginBottom: '0.25rem' }}>
               {income > 0 ? formatAmount(income) : 'Not set'}
@@ -525,7 +518,7 @@ const Home = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3 style={{ color: theme.text, margin: 0, fontSize: '1rem', fontWeight: '600' }}>
-                ?? {mainSavingsGoal.name}
+                Target: {mainSavingsGoal.name}
               </h3>
               <span style={{ color: '#3B82F6', fontSize: '0.75rem', fontWeight: '600' }}>
                 {savingsPercentage.toFixed(1)}% Complete
@@ -550,7 +543,7 @@ const Home = () => {
             </div>
             <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: theme.background, borderRadius: '8px' }}>
               <span style={{ color: '#3B82F6', fontSize: '0.7rem' }}>
-                {savingsPercentage >= 100 ? '?? Congratulations! Goal achieved!' : ?? Only  more to go!}
+                {savingsPercentage >= 100 ? 'Congratulations! Goal achieved!' : 'Only ' + formatAmount(mainSavingsGoal.targetAmount - mainSavingsGoal.currentAmount) + ' more to go!'}
               </span>
             </div>
           </div>
@@ -779,7 +772,6 @@ const Home = () => {
                   marginBottom: '0.5rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '1.5rem' }}>{categoryDisplay[category]?.split(' ')[0] || '??'}</span>
                     <div>
                       <div style={{ fontWeight: '600', color: theme.text }}>{category}</div>
                       <div style={{ fontSize: '0.7rem', color: theme.textSecondary }}>{data.count} transactions</div>
@@ -796,7 +788,7 @@ const Home = () => {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '0.5rem 0.5rem 0.5rem 2.5rem',
+                      padding: '0.5rem 0.5rem 0.5rem 2rem',
                       borderBottom: '1px solid ' + theme.border
                     }}
                   >
@@ -821,7 +813,7 @@ const Home = () => {
                           borderRadius: '4px'
                         }}
                       >
-                        ???
+                        Delete
                       </button>
                     </div>
                   </div>
