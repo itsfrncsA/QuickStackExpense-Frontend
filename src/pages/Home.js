@@ -6,13 +6,13 @@ const API_URL = 'https://quickstackexpense.onrender.com';
 const Home = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showIncomeForm, setShowIncomeForm] = useState(false);
-  const [showGoalForm, setShowGoalForm] = useState(false);
-  const [showAddToGoalForm, setShowAddToGoalForm] = useState(null);
-  const [selectedGoalId, setSelectedGoalId] = useState(null);
-  const [addAmount, setAddAmount] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [dateRange, setDateRange] = useState('all');
   const [summary, setSummary] = useState({ total: 0, recentTotal: 0, count: 0, byCategory: {} });
   const [income, setIncome] = useState(() => {
     const saved = localStorage.getItem('monthlyIncome');
@@ -22,8 +22,6 @@ const Home = () => {
     const saved = localStorage.getItem('savingsGoals');
     return saved ? JSON.parse(saved) : [];
   });
-  const [editingId, setEditingId] = useState(null);
-  const [editData, setEditData] = useState({});
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -31,13 +29,18 @@ const Home = () => {
     date: new Date().toISOString().split('T')[0],
     description: '',
   });
-  const [incomeAmount, setIncomeAmount] = useState('');
   const [goalForm, setGoalForm] = useState({
     name: '',
     targetAmount: '',
-    currentAmount: 0,
     description: ''
   });
+  const [incomeAmount, setIncomeAmount] = useState('');
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   const fetchData = async () => {
     try {
@@ -62,8 +65,72 @@ const Home = () => {
     fetchData();
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+  // Check expense alert (50% of income)
+  useEffect(() => {
+    if (income > 0 && summary.total > income * 0.5) {
+      showNotification('You have spent over 50% of your monthly income!', 'warning');
+    }
+  }, [summary.total, income]);
+
+  const handleSetIncome = () => {
+    const incomeValue = parseFloat(incomeAmount);
+    if (isNaN(incomeValue) || incomeValue <= 0) {
+      alert('Please enter a valid income amount');
+      return;
+    }
+    setIncome(incomeValue);
+    localStorage.setItem('monthlyIncome', incomeValue);
+    setShowIncomeModal(false);
+    setIncomeAmount('');
+    showNotification('Monthly income set to ' + formatAmount(incomeValue), 'success');
+  };
+
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    if (!formData.title || !formData.amount || formData.amount <= 0) {
+      alert('Please fill all required fields');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(API_URL + '/api/expenses', {
+        title: formData.title,
+        amount: parseFloat(formData.amount),
+        category: formData.category,
+        date: formData.date,
+        description: formData.description
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+      setFormData({
+        title: '',
+        amount: '',
+        category: 'Food',
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+      });
+      setShowModal(false);
+      fetchData();
+      showNotification('Expense added successfully!', 'success');
+    } catch (err) {
+      alert('Error adding expense: ' + err.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this expense?')) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(API_URL + '/api/expenses/' + id, {
+          headers: { 'x-auth-token': token }
+        });
+        fetchData();
+        showNotification('Expense deleted', 'success');
+      } catch (err) {
+        alert('Error deleting expense');
+      }
+    }
   };
 
   const handleCreateGoal = () => {
@@ -84,117 +151,33 @@ const Home = () => {
     const updatedGoals = [...savingsGoals, newGoal];
     setSavingsGoals(updatedGoals);
     localStorage.setItem('savingsGoals', JSON.stringify(updatedGoals));
-    setGoalForm({ name: '', targetAmount: '', currentAmount: 0, description: '' });
-    setShowGoalForm(false);
-    alert('Savings goal created successfully!');
+    setGoalForm({ name: '', targetAmount: '', description: '' });
+    setShowGoalModal(false);
+    showNotification('Savings goal created!', 'success');
   };
 
-  const handleAddToGoal = (goalId) => {
-    if (!addAmount || parseFloat(addAmount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
-    }
+  const handleExport = (format) => {
+    const data = expenses.map(exp => ({
+      Title: exp.title,
+      Amount: exp.amount,
+      Category: exp.category,
+      Date: new Date(exp.date).toLocaleDateString(),
+      Description: exp.description || ''
+    }));
     
-    const updatedGoals = savingsGoals.map(goal => {
-      if (goal.id === goalId) {
-        const newAmount = goal.currentAmount + parseFloat(addAmount);
-        return { ...goal, currentAmount: newAmount };
-      }
-      return goal;
-    });
-    
-    setSavingsGoals(updatedGoals);
-    localStorage.setItem('savingsGoals', JSON.stringify(updatedGoals));
-    setShowAddToGoalForm(null);
-    setAddAmount('');
-    alert('Added to savings goal!');
-  };
-
-  const handleDeleteGoal = (goalId) => {
-    if (window.confirm('Delete this savings goal?')) {
-      const updatedGoals = savingsGoals.filter(goal => goal.id !== goalId);
-      setSavingsGoals(updatedGoals);
-      localStorage.setItem('savingsGoals', JSON.stringify(updatedGoals));
+    if (format === 'CSV') {
+      const csv = [['Title', 'Amount', 'Category', 'Date', 'Description'], ...data.map(d => Object.values(d))];
+      const csvContent = csv.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'expenses.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showNotification('Exported as CSV', 'success');
     }
-  };
-
-  const handleSetIncome = () => {
-    const incomeValue = parseFloat(incomeAmount);
-    if (isNaN(incomeValue) || incomeValue <= 0) {
-      alert('Please enter a valid income amount');
-      return;
-    }
-    setIncome(incomeValue);
-    localStorage.setItem('monthlyIncome', incomeValue);
-    setShowIncomeForm(false);
-    setIncomeAmount('');
-    alert('Monthly income set to ' + formatAmount(incomeValue));
-  };
-
-  const handleAddExpense = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(API_URL + '/api/expenses', {
-        title: formData.title,
-        amount: formData.amount,
-        category: formData.category,
-        date: formData.date,
-        description: formData.description
-      }, {
-        headers: { 'x-auth-token': token }
-      });
-      setFormData({
-        title: '',
-        amount: '',
-        category: 'Food',
-        date: new Date().toISOString().split('T')[0],
-        description: '',
-      });
-      setShowAddForm(false);
-      fetchData();
-    } catch (err) {
-      alert('Error adding expense: ' + err.message);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this expense?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(API_URL + '/api/expenses/' + id, {
-          headers: { 'x-auth-token': token }
-        });
-        fetchData();
-      } catch (err) {
-        alert('Error deleting expense');
-      }
-    }
-  };
-
-  const handleEdit = (expense) => {
-    setEditingId(expense._id);
-    setEditData({
-      title: expense.title,
-      amount: expense.amount,
-      category: expense.category,
-      date: expense.date?.split('T')[0] || new Date().toISOString().split('T')[0],
-      description: expense.description || ''
-    });
-  };
-
-  const handleUpdate = async (id) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(API_URL + '/api/expenses/' + id, editData, {
-        headers: { 'x-auth-token': token }
-      });
-      setEditingId(null);
-      fetchData();
-      alert('Expense updated successfully!');
-    } catch (err) {
-      alert('Error updating expense: ' + err.message);
-    }
+    setShowExportMenu(false);
   };
 
   const formatAmount = (amount) => {
@@ -204,309 +187,371 @@ const Home = () => {
     }).format(amount || 0);
   };
 
+  // Group expenses by category and count
+  const groupedExpenses = expenses.reduce((acc, exp) => {
+    const key = exp.category;
+    if (!acc[key]) {
+      acc[key] = { count: 0, total: 0, items: [] };
+    }
+    acc[key].count++;
+    acc[key].total += exp.amount;
+    acc[key].items.push(exp);
+    return acc;
+  }, {});
+
+  // Filter expenses
+  const filteredExpenses = expenses.filter(exp => {
+    if (selectedCategory !== 'All' && exp.category !== selectedCategory) return false;
+    if (dateRange === 'week') {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      if (new Date(exp.date) < weekAgo) return false;
+    }
+    if (dateRange === 'month') {
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      if (new Date(exp.date) < monthAgo) return false;
+    }
+    return true;
+  });
+
   const totalExpenses = summary.total;
   const remainingBudget = income - totalExpenses;
   const budgetPercentage = income > 0 ? (totalExpenses / income) * 100 : 0;
-  const isOverBudget = remainingBudget < 0;
 
-  const getBudgetColor = () => {
-    if (isOverBudget) return '#f44336';
-    if (budgetPercentage >= 80) return '#ff9800';
-    return '#4CAF50';
+  const categoryIcons = {
+    Food: '??',
+    Transport: '??',
+    Shopping: '???',
+    Entertainment: '??',
+    Bills: '??',
+    Healthcare: '??',
+    Education: '??',
+    Other: '??'
   };
 
   const totalSaved = savingsGoals.reduce((sum, goal) => sum + goal.currentAmount, 0);
-  const totalSavingsTarget = savingsGoals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+  const mainSavingsGoal = savingsGoals[0];
+  const savingsPercentage = mainSavingsGoal ? (mainSavingsGoal.currentAmount / mainSavingsGoal.targetAmount) * 100 : 0;
 
-  const categories = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Bills', 'Healthcare', 'Education', 'Other'];
+  const styles = {
+    light: {
+      background: '#F9FAFB',
+      cardBg: '#FFFFFF',
+      text: '#1F2937',
+      textSecondary: '#6B7280',
+      border: '#E5E7EB'
+    },
+    dark: {
+      background: '#111827',
+      cardBg: '#1F2937',
+      text: '#F9FAFB',
+      textSecondary: '#9CA3AF',
+      border: '#374151'
+    }
+  };
+
+  const theme = darkMode ? styles.dark : styles.light;
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '50px' }}>Loading your finances...</div>;
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
-      {/* Sidebar */}
-      <div style={{
-        width: sidebarOpen ? '250px' : '60px',
-        minWidth: sidebarOpen ? '250px' : '60px',
-        backgroundColor: '#1a1a2e',
-        color: 'white',
-        padding: sidebarOpen ? '1.5rem' : '0.75rem',
-        overflowY: 'auto',
-        transition: 'all 0.3s ease',
-        height: '100vh',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000
-      }}>
-        {/* Clickable Logo - Toggles Sidebar */}
-        <div 
-          onClick={toggleSidebar}
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            marginBottom: sidebarOpen ? '2rem' : '1rem',
-            marginTop: sidebarOpen ? '1rem' : '0.5rem',
-            cursor: 'pointer'
-          }}
-        >
-          <img 
-            src="/layout.png" 
-            alt="Menu" 
-            style={{ 
-              width: sidebarOpen ? '80px' : '40px',
-              height: 'auto',
-              objectFit: 'contain',
-              transition: 'all 0.3s ease'
-            }}
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
+    <div style={{ backgroundColor: theme.background, minHeight: '100vh', fontFamily: "'Inter', 'Poppins', sans-serif" }}>
+      {/* Header */}
+      <header style={{ backgroundColor: theme.cardBg, borderBottom: '1px solid ' + theme.border, padding: '1rem 2rem', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <img src="/layout.png" alt="QuickStack" style={{ height: '40px' }} />
+            <h1 style={{ fontSize: '1.5rem', color: theme.text }}>QuickStack</h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button onClick={() => setDarkMode(!darkMode)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>
+              {darkMode ? '??' : '??'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1E3A8A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>FA</div>
+              <span style={{ color: theme.text }}>Welcome, Francis</span>
+            </div>
+          </div>
         </div>
-        
-        {sidebarOpen && (
-          <>
-            {/* Budget Overview */}
-            <div>
-              <h3 style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '0.75rem', letterSpacing: '1px' }}>BUDGET OVERVIEW</h3>
-              
-              <div style={{ backgroundColor: '#16213e', borderRadius: '10px', padding: '0.75rem', marginBottom: '0.75rem' }}>
-                <div style={{ fontSize: '0.65rem', color: '#aaa' }}>MONTHLY INCOME</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
-                {income === 0 && (
-                  <button onClick={() => setShowIncomeForm(true)} style={{ marginTop: '0.4rem', padding: '0.2rem 0.4rem', fontSize: '0.65rem', backgroundColor: '#4CAF50', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>Set Income</button>
-                )}
-              </div>
-              
-              {income > 0 && (
-                <div style={{ backgroundColor: '#16213e', borderRadius: '10px', padding: '0.75rem' }}>
-                  <div style={{ fontSize: '0.65rem', color: '#aaa' }}>REMAINING BUDGET</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: isOverBudget ? '#f44336' : '#4CAF50' }}>
-                    {isOverBudget ? formatAmount(Math.abs(remainingBudget)) + ' over' : formatAmount(remainingBudget)}
-                  </div>
-                  <div style={{ marginTop: '0.4rem' }}>
-                    <div style={{ height: '4px', backgroundColor: '#333', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: Math.min(budgetPercentage, 100) + '%', height: '100%', backgroundColor: getBudgetColor(), borderRadius: '3px' }}></div>
-                    </div>
-                    <div style={{ fontSize: '0.6rem', color: '#aaa', marginTop: '0.2rem' }}>{budgetPercentage.toFixed(1)}% spent</div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Savings Goals Summary */}
-            <div style={{ marginTop: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '0.75rem', letterSpacing: '1px' }}>SAVINGS GOALS</h3>
-              <div style={{ backgroundColor: '#16213e', borderRadius: '10px', padding: '0.75rem' }}>
-                <div style={{ fontSize: '0.65rem', color: '#aaa' }}>TOTAL SAVED</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#ff9800' }}>{formatAmount(totalSaved)}</div>
-                <div style={{ fontSize: '0.6rem', color: '#aaa', marginTop: '0.2rem' }}>Target: {formatAmount(totalSavingsTarget)}</div>
-                <button onClick={() => setShowGoalForm(true)} style={{ marginTop: '0.5rem', width: '100%', padding: '0.4rem', backgroundColor: '#ff9800', border: 'none', borderRadius: '6px', color: 'white', cursor: 'pointer', fontSize: '0.7rem' }}>+ New Goal</button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div style={{ 
-        flex: 1, 
-        padding: '1.5rem',
-        overflowY: 'auto'
-      }}>
-        <h1 style={{ fontSize: '1.5rem', color: '#1a1a2e', marginBottom: '1rem' }}>Dashboard</h1>
-        
-        {/* Stats Cards */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-          gap: '0.75rem', 
-          marginBottom: '1rem' 
-        }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#666' }}>Monthly Income</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#4CAF50' }}>{income > 0 ? formatAmount(income) : 'Not set'}</div>
+      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+        {/* Notification */}
+        {notification && (
+          <div style={{
+            position: 'fixed',
+            top: '80px',
+            right: '20px',
+            backgroundColor: notification.type === 'warning' ? '#DC2626' : '#10B981',
+            color: 'white',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            zIndex: 1000,
+            animation: 'slideIn 0.3s ease'
+          }}>
+            {notification.message}
           </div>
-          
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#666' }}>Total Expenses</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#f44336' }}>{formatAmount(totalExpenses)}</div>
-          </div>
-          
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#666' }}>Remaining Budget</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: isOverBudget ? '#f44336' : '#4CAF50' }}>
-              {income > 0 ? formatAmount(remainingBudget) : 'Set income first'}
+        )}
+
+        {/* Dashboard Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s', cursor: 'pointer', ':hover': { transform: 'translateY(-5px)' } }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '2rem' }}>??</span>
+              <span style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: '500' }}>{income > 0 ? 'Active' : 'Not set'}</span>
             </div>
+            <h3 style={{ color: theme.textSecondary, fontSize: '0.85rem', marginBottom: '0.25rem' }}>Monthly Income</h3>
+            <p style={{ color: '#10B981', fontSize: '1.5rem', fontWeight: 'bold' }}>{income > 0 ? formatAmount(income) : 'Not set'}</p>
+            {income === 0 && (
+              <button onClick={() => setShowIncomeModal(true)} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.7rem' }}>Set Income</button>
+            )}
           </div>
-          
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem' }}>
-            <div style={{ fontSize: '0.7rem', color: '#666' }}>Total Savings</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ff9800' }}>{formatAmount(totalSaved)}</div>
+
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '2rem' }}>??</span>
+            </div>
+            <h3 style={{ color: theme.textSecondary, fontSize: '0.85rem', marginBottom: '0.25rem' }}>Total Expenses</h3>
+            <p style={{ color: '#DC2626', fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(totalExpenses)}</p>
+          </div>
+
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '2rem' }}>??</span>
+            </div>
+            <h3 style={{ color: theme.textSecondary, fontSize: '0.85rem', marginBottom: '0.25rem' }}>Remaining Budget</h3>
+            <p style={{ color: '#14B8A6', fontSize: '1.5rem', fontWeight: 'bold' }}>{income > 0 ? formatAmount(remainingBudget) : 'Set income'}</p>
+            {income > 0 && <div style={{ marginTop: '0.5rem', height: '4px', backgroundColor: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ width: Math.min(budgetPercentage, 100) + '%', height: '100%', backgroundColor: budgetPercentage > 80 ? '#DC2626' : '#14B8A6' }}></div>
+            </div>}
+          </div>
+
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '2rem' }}>??</span>
+            </div>
+            <h3 style={{ color: theme.textSecondary, fontSize: '0.85rem', marginBottom: '0.25rem' }}>Savings</h3>
+            <p style={{ color: '#3B82F6', fontSize: '1.5rem', fontWeight: 'bold' }}>{formatAmount(totalSaved)}</p>
+            <button onClick={() => setShowGoalModal(true)} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', backgroundColor: '#3B82F6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.7rem' }}>Set Goal</button>
           </div>
         </div>
 
-        {/* Set Income Form */}
-        {showIncomeForm && (
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '1rem', marginBottom: '1rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>Set Monthly Income</h3>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <input 
-                type="number" 
-                step="0.01" 
-                placeholder="Enter your monthly income" 
-                value={incomeAmount} 
-                onChange={(e) => setIncomeAmount(e.target.value)} 
-                style={{ flex: 1, padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} 
-              />
-              <button onClick={handleSetIncome} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Save</button>
-              <button onClick={() => { setShowIncomeForm(false); setIncomeAmount(''); }} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
+        {/* Savings Goal Progress */}
+        {mainSavingsGoal && (
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
+            <h3 style={{ color: theme.text, marginBottom: '0.5rem' }}>?? {mainSavingsGoal.name}</h3>
+            <p style={{ color: theme.textSecondary, fontSize: '0.85rem', marginBottom: '0.75rem' }}>You're {savingsPercentage.toFixed(1)}% to your {formatAmount(mainSavingsGoal.targetAmount)} goal!</p>
+            <div style={{ height: '8px', backgroundColor: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: Math.min(savingsPercentage, 100) + '%', height: '100%', backgroundColor: '#3B82F6', borderRadius: '4px' }}></div>
             </div>
+            <p style={{ color: theme.textSecondary, fontSize: '0.75rem', marginTop: '0.5rem' }}>Saved: {formatAmount(mainSavingsGoal.currentAmount)}</p>
           </div>
         )}
 
-        {/* Create Goal Form */}
-        {showGoalForm && (
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '1rem', marginBottom: '1rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>Create Savings Goal</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <input type="text" placeholder="Goal Name" value={goalForm.name} onChange={(e) => setGoalForm({...goalForm, name: e.target.value})} style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <input type="number" step="0.01" placeholder="Target Amount (PHP)" value={goalForm.targetAmount} onChange={(e) => setGoalForm({...goalForm, targetAmount: e.target.value})} style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <input type="text" placeholder="Description (optional)" value={goalForm.description} onChange={(e) => setGoalForm({...goalForm, description: e.target.value})} style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={handleCreateGoal} style={{ flex: 1, padding: '0.4rem', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Create Goal</button>
-                <button onClick={() => setShowGoalForm(false)} style={{ flex: 1, padding: '0.4rem', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add to Goal Popup */}
-        {showAddToGoalForm && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '1.5rem', width: '350px', maxWidth: '90%' }}>
-              <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem' }}>Add to Savings</h3>
-              <input type="number" step="0.01" placeholder="Amount to add (PHP)" value={addAmount} onChange={(e) => setAddAmount(e.target.value)} style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '6px', marginBottom: '0.75rem' }} />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => handleAddToGoal(selectedGoalId)} style={{ flex: 1, padding: '0.5rem', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Add</button>
-                <button onClick={() => setShowAddToGoalForm(null)} style={{ flex: 1, padding: '0.5rem', backgroundColor: '#999', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Savings Goals Section */}
-        {savingsGoals.length > 0 && (
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem', marginBottom: '1rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>Your Savings Goals</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.5rem' }}>
-              {savingsGoals.map(goal => {
-                const percentage = (goal.currentAmount / goal.targetAmount) * 100;
-                const isCompleted = percentage >= 100;
-                return (
-                  <div key={goal.id} style={{ backgroundColor: '#f8f9fa', borderRadius: '8px', padding: '0.6rem', border: isCompleted ? '1px solid #4CAF50' : 'none' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: '0.8rem' }}>{goal.name}</h4>
-                        {goal.description && <div style={{ fontSize: '0.6rem', color: '#999' }}>{goal.description}</div>}
-                      </div>
-                      <button onClick={() => handleDeleteGoal(goal.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f44336', fontSize: '0.85rem' }}>Delete</button>
-                    </div>
-                    <div style={{ fontSize: '0.7rem', marginBottom: '0.2rem' }}>
-                      {formatAmount(goal.currentAmount)} / {formatAmount(goal.targetAmount)}
-                    </div>
-                    <div style={{ height: '5px', backgroundColor: '#e0e0e0', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.3rem' }}>
-                      <div style={{ width: Math.min(percentage, 100) + '%', height: '100%', backgroundColor: isCompleted ? '#4CAF50' : '#ff9800' }}></div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: '0.6rem', color: '#666' }}>{percentage.toFixed(1)}% complete</div>
-                      {!isCompleted && (
-                        <button onClick={() => { setSelectedGoalId(goal.id); setShowAddToGoalForm(true); }} style={{ padding: '0.2rem 0.5rem', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.6rem' }}>+ Add Funds</button>
-                      )}
-                      {isCompleted && <span style={{ color: '#4CAF50', fontSize: '0.65rem' }}>Goal Achieved</span>}
-                    </div>
+        {/* Charts Section - Simple visual representation */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ color: theme.text, marginBottom: '1rem' }}>Expense Categories</h3>
+            {Object.entries(summary.byCategory).map(([cat, amount]) => {
+              const percentage = (amount / totalExpenses) * 100;
+              return (
+                <div key={cat} style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <span style={{ color: theme.text, fontSize: '0.85rem' }}>{categoryIcons[cat]} {cat}</span>
+                    <span style={{ color: theme.textSecondary, fontSize: '0.85rem' }}>{formatAmount(amount)} ({percentage.toFixed(1)}%)</span>
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ height: '6px', backgroundColor: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: percentage + '%', height: '100%', backgroundColor: '#3B82F6', borderRadius: '3px' }}></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
 
-        {/* Add Expense Button */}
-        {!showAddForm ? (
-          <button onClick={() => setShowAddForm(true)} style={{ width: '100%', padding: '0.6rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', marginBottom: '1rem' }}>
-            + Add New Expense
-          </button>
-        ) : (
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem', marginBottom: '1rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>New Expense</h3>
-            <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <input type="number" step="0.01" placeholder="Amount (PHP)" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} required style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }}>
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <input type="text" placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{ padding: '0.4rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.85rem' }} />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" style={{ flex: 1, padding: '0.4rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Save</button>
-                <button type="button" onClick={() => setShowAddForm(false)} style={{ flex: 1, padding: '0.4rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ color: theme.text, marginBottom: '1rem' }}>Income vs Expenses</h3>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <span style={{ color: theme.text, fontSize: '0.85rem' }}>Income</span>
+                <span style={{ color: theme.textSecondary, fontSize: '0.85rem' }}>{formatAmount(income)}</span>
               </div>
-            </form>
-          </div>
-        )}
-
-        {/* Expenses List */}
-        <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '0.75rem' }}>
-          <h3 style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>Recent Expenses</h3>
-          {expenses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '1.5rem', color: '#999' }}>
-              <p style={{ fontSize: '0.8rem' }}>No expenses yet</p>
-              <p style={{ fontSize: '0.7rem' }}>Click Add New Expense to get started</p>
+              <div style={{ height: '6px', backgroundColor: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '100%', backgroundColor: '#10B981', borderRadius: '3px' }}></div>
+              </div>
             </div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <span style={{ color: theme.text, fontSize: '0.85rem' }}>Expenses</span>
+                <span style={{ color: theme.textSecondary, fontSize: '0.85rem' }}>{formatAmount(totalExpenses)}</span>
+              </div>
+              <div style={{ height: '6px', backgroundColor: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: (totalExpenses / income) * 100 + '%', height: '100%', backgroundColor: '#DC2626', borderRadius: '3px' }}></div>
+              </div>
+            </div>
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid ' + theme.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: theme.text }}>Saving Rate</span>
+                <span style={{ color: '#14B8A6', fontWeight: 'bold' }}>{income > 0 ? ((income - totalExpenses) / income * 100).toFixed(1) : 0}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Bar */}
+        <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }}>
+              <option>All</option>
+              <option>Food</option><option>Transport</option><option>Shopping</option>
+              <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
+              <option>Education</option><option>Other</option>
+            </select>
+            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }}>
+              <option value="all">All Time</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+            </select>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowExportMenu(!showExportMenu)} style={{ padding: '0.5rem 1rem', backgroundColor: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>?? Export</button>
+            {showExportMenu && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', backgroundColor: theme.cardBg, borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 10 }}>
+                <button onClick={() => handleExport('CSV')} style={{ display: 'block', width: '100%', padding: '0.5rem 1rem', textAlign: 'left', border: 'none', backgroundColor: 'transparent', color: theme.text, cursor: 'pointer' }}>CSV Export</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Expense List - Grouped */}
+        <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <h3 style={{ color: theme.text, marginBottom: '1rem' }}>Recent Expenses</h3>
+          {filteredExpenses.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: theme.textSecondary }}>No expenses found</div>
           ) : (
             <div>
-              {expenses.slice(0, 10).map(expense => (
-                <div key={expense._id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', borderBottom: '1px solid #eee' }}>
-                  <div style={{ flex: 1 }}>
-                    {editingId === expense._id ? (
-                      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                        <input value={editData.title} onChange={(e) => setEditData({...editData, title: e.target.value})} style={{ padding: '0.2rem', border: '1px solid #ddd', borderRadius: '4px', width: '90px', fontSize: '0.75rem' }} placeholder="Title" />
-                        <input type="number" value={editData.amount} onChange={(e) => setEditData({...editData, amount: e.target.value})} style={{ padding: '0.2rem', border: '1px solid #ddd', borderRadius: '4px', width: '70px', fontSize: '0.75rem' }} placeholder="Amount" />
-                        <select value={editData.category} onChange={(e) => setEditData({...editData, category: e.target.value})} style={{ padding: '0.2rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.7rem' }}>
-                          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
-                        <input type="date" value={editData.date} onChange={(e) => setEditData({...editData, date: e.target.value})} style={{ padding: '0.2rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.7rem' }} />
-                        <button onClick={() => handleUpdate(expense._id)} style={{ background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', cursor: 'pointer', fontSize: '0.65rem' }}>Save</button>
-                        <button onClick={() => setEditingId(null)} style={{ background: '#999', color: 'white', border: 'none', borderRadius: '4px', padding: '0.2rem 0.4rem', cursor: 'pointer', fontSize: '0.65rem' }}>Cancel</button>
+              {Object.entries(filteredExpenses.reduce((acc, exp) => {
+                const key = exp.category;
+                if (!acc[key]) acc[key] = { count: 0, total: 0, items: [] };
+                acc[key].count++;
+                acc[key].total += exp.amount;
+                acc[key].items.push(exp);
+                return acc;
+              }, {})).map(([category, data]) => (
+                <div key={category} style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: theme.background, borderRadius: '8px', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '1.5rem' }}>{categoryIcons[category]}</span>
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: theme.text }}>{category}</div>
+                        <div style={{ fontSize: '0.7rem', color: theme.textSecondary }}>{data.count} transactions</div>
                       </div>
-                    ) : (
-                      <>
-                        <div style={{ fontWeight: '500', fontSize: '0.8rem' }}>{expense.title}</div>
-                        <div style={{ fontSize: '0.6rem', color: '#999' }}>{expense.category} - {new Date(expense.date).toLocaleDateString()}</div>
-                        {expense.description && <div style={{ fontSize: '0.6rem', color: '#aaa' }}>{expense.description}</div>}
-                      </>
-                    )}
-                  </div>
-                  {editingId !== expense._id && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ color: '#f44336', fontWeight: '600', fontSize: '0.75rem' }}>-{formatAmount(expense.amount)}</span>
-                      <button onClick={() => handleEdit(expense)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <img src="/edit.png" alt="Edit" style={{ width: '16px', height: '16px' }} />
-                      </button>
-                      <button onClick={() => handleDelete(expense._id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <img src="/delete.png" alt="Delete" style={{ width: '16px', height: '16px' }} />
-                      </button>
                     </div>
-                  )}
+                    <div style={{ fontWeight: 'bold', color: '#DC2626' }}>{formatAmount(data.total)}</div>
+                  </div>
+                  {data.items.map(expense => (
+                    <div key={expense._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.5rem 0.5rem 2rem', borderBottom: '1px solid ' + theme.border }}>
+                      <div>
+                        <div style={{ color: theme.text, fontSize: '0.85rem' }}>{expense.title}</div>
+                        <div style={{ fontSize: '0.65rem', color: theme.textSecondary }}>{new Date(expense.date).toLocaleDateString()}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ color: '#DC2626', fontSize: '0.85rem' }}>-{formatAmount(expense.amount)}</span>
+                        <button onClick={() => handleDelete(expense._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' }}>???</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </main>
+
+      {/* Floating Action Button */}
+      <button onClick={() => setShowModal(true)} style={{
+        position: 'fixed',
+        bottom: '2rem',
+        right: '2rem',
+        width: '56px',
+        height: '56px',
+        borderRadius: '50%',
+        backgroundColor: '#1E3A8A',
+        color: 'white',
+        border: 'none',
+        fontSize: '24px',
+        cursor: 'pointer',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+        transition: 'transform 0.2s',
+        zIndex: 100
+      }} onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>+</button>
+
+      {/* Modal */}
+      {showModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '2rem', width: '90%', maxWidth: '500px' }}>
+            <h2 style={{ color: theme.text, marginBottom: '1rem' }}>Add Expense</h2>
+            <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }} />
+              <input type="number" step="0.01" placeholder="Amount" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }} />
+              <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }}>
+                <option>Food</option><option>Transport</option><option>Shopping</option>
+                <option>Entertainment</option><option>Bills</option><option>Healthcare</option>
+                <option>Education</option><option>Other</option>
+              </select>
+              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }} />
+              <input type="text" placeholder="Notes" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text }} />
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button type="submit" style={{ flex: 1, padding: '0.75rem', backgroundColor: '#1E3A8A', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Save</button>
+                <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#6B7280', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Income Modal */}
+      {showIncomeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '2rem', width: '90%', maxWidth: '400px' }}>
+            <h2 style={{ color: theme.text, marginBottom: '1rem' }}>Set Monthly Income</h2>
+            <input type="number" step="0.01" placeholder="Monthly Income" value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text, marginBottom: '1rem' }} />
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={handleSetIncome} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setShowIncomeModal(false)} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#6B7280', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goal Modal */}
+      {showGoalModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: theme.cardBg, borderRadius: '16px', padding: '2rem', width: '90%', maxWidth: '400px' }}>
+            <h2 style={{ color: theme.text, marginBottom: '1rem' }}>Create Savings Goal</h2>
+            <input type="text" placeholder="Goal Name (e.g., New Phone)" value={goalForm.name} onChange={(e) => setGoalForm({...goalForm, name: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text, marginBottom: '1rem' }} />
+            <input type="number" step="0.01" placeholder="Target Amount" value={goalForm.targetAmount} onChange={(e) => setGoalForm({...goalForm, targetAmount: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text, marginBottom: '1rem' }} />
+            <input type="text" placeholder="Description" value={goalForm.description} onChange={(e) => setGoalForm({...goalForm, description: e.target.value})} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid ' + theme.border, backgroundColor: theme.cardBg, color: theme.text, marginBottom: '1rem' }} />
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={handleCreateGoal} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Create Goal</button>
+              <button onClick={() => setShowGoalModal(false)} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#6B7280', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer style={{ backgroundColor: theme.cardBg, borderTop: '1px solid ' + theme.border, padding: '1.5rem 2rem', marginTop: '2rem', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '1rem' }}>
+          <a href="#" style={{ color: theme.textSecondary, textDecoration: 'none', fontSize: '0.85rem' }}>Settings</a>
+          <button onClick={() => handleExport('CSV')} style={{ color: theme.textSecondary, textDecoration: 'none', fontSize: '0.85rem', background: 'none', border: 'none', cursor: 'pointer' }}>Export</button>
+          <a href="#" style={{ color: theme.textSecondary, textDecoration: 'none', fontSize: '0.85rem' }}>About</a>
+        </div>
+        <p style={{ color: theme.textSecondary, fontSize: '0.75rem' }}>? 2024 QuickStack Expense Tracker. All rights reserved.</p>
+      </footer>
     </div>
   );
 };
