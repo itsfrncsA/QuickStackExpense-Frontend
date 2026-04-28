@@ -1,0 +1,43 @@
+// Add this to pages/Home.js - replace the savings goal section
+// First, add this state after other states (around line 30-40):
+// const [showAddFundsModal, setShowAddFundsModal] = useState(false);
+// const [selectedGoalId, setSelectedGoalId] = useState(null);
+// const [addFundsAmount, setAddFundsAmount] = useState('');
+
+// Then add these functions:
+
+const handleAddFunds = () => {
+  const amountValue = parseFloat(addFundsAmount);
+  if (isNaN(amountValue) || amountValue <= 0) {
+    alert('Please enter a valid amount');
+    return;
+  }
+  
+  const updatedGoals = savingsGoals.map(goal => {
+    if (goal.id === selectedGoalId) {
+      return { ...goal, currentAmount: (goal.currentAmount || 0) + amountValue };
+    }
+    return goal;
+  });
+  
+  setSavingsGoals(updatedGoals);
+  setLocal('savingsGoals', updatedGoals);
+  setShowAddFundsModal(false);
+  setAddFundsAmount('');
+  setSelectedGoalId(null);
+  setNotification({ message: 'Funds added to savings goal!', type: 'success' });
+};
+
+// Add this modal after the other modals:
+// {showAddFundsModal && (
+//   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+//     <div style={{ backgroundColor: styles.cardBg, borderRadius: '20px', padding: '1.5rem', width: '90%', maxWidth: '350px' }}>
+//       <h2 style={{ color: styles.text, marginBottom: '1rem' }}>Add Funds to Savings</h2>
+//       <input type="number" step="0.01" placeholder="Amount to add" value={addFundsAmount} onChange={(e) => setAddFundsAmount(e.target.value)} style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid ' + styles.border, backgroundColor: styles.background, color: styles.text, marginBottom: '1rem' }} />
+//       <div style={{ display: 'flex', gap: '0.75rem' }}>
+//         <button onClick={handleAddFunds} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#3B82F6', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>Add Funds</button>
+//         <button onClick={() => { setShowAddFundsModal(false); setAddFundsAmount(''); setSelectedGoalId(null); }} style={{ flex: 1, padding: '0.75rem', backgroundColor: '#6B7280', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>Cancel</button>
+//       </div>
+//     </div>
+//   </div>
+// )}
